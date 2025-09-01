@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tournament{% endblock %}
+
+{% block body %}
+    <h1>Tournament</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Nazwa</th>
+                <td>{{ tournament.name }}</td>
+            </tr>
+            <tr>
+                <th>Data</th>
+                <td>{{ tournament.date ? tournament.date|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_tournament_index') }}" class="button">Powrót</a>
+{% endblock %}

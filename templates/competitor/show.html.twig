@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Competitor{% endblock %}
+
+{% block body %}
+    <h1>Competitor</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ competitor.id }}</td>
+            </tr>
+            <tr>
+                <th>First_name</th>
+                <td>{{ competitor.firstName }}</td>
+            </tr>
+            <tr>
+                <th>Last_name</th>
+                <td>{{ competitor.lastName }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_competitor_index') }}">back to list</a>
+
+    <a href="{{ path('app_competitor_edit', {'id': competitor.id}) }}">edit</a>
+
+    {{ include('competitor/_delete_form.html.twig') }}
+{% endblock %}

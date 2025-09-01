@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Competitor{% endblock %}
+
+{% block body %}
+    <h1>Create new Competitor</h1>
+
+    {{ include('competitor/_form.html.twig') }}
+
+    <a href="{{ path('app_competitor_index') }}">back to list</a>
+{% endblock %}

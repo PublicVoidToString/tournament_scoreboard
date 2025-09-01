@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Wyniki{% endblock %}
+
+{% block body %}
+<h2>{{ tournament.name }}</h2>
+
+{% for group, categories in groupedCategories %}
+    <h3>{{ categories[0]['description'] }}</h3>
+    <table border="1" cellspacing="0" cellpadding="5">
+        <thead>
+            <tr>
+                <th rowspan="2">Name</th>
+                {% for cat in categories %}
+                    <th colspan="{{ cat.attempt_limit + 1 }}">{{ cat.name }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, scoresByCategory in results %}
+                <tr>
+                    <td>{{ name }}</td>
+                    {% for cat in categories %}
+                        {% set scores = scoresByCategory[cat.id] %}
+                        {% for i in 0..cat.attempt_limit %}
+                            <td class="{{ i == cat.attempt_limit ? 'last-score' : '' }}">
+                                {{ scores[i] is defined ? scores[i] : '' }}
+                            </td>
+                        {% endfor %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+{% endfor %}
+
+<a href="{{ path('app_tournament_index') }}" class="button">Powrót</a>
+{% endblock %}

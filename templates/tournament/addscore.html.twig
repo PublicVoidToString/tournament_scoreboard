@@ -40,13 +40,13 @@
                     <td>{{ category.name }}</td>
                     <td>0</td>
                     <td>
-                        <button type="button" onclick="updateQuantity({{ category.id }}, -1)">-</button>
+                        <button type="button" id="remove-btn-{{ category.id }}" onclick="updateQuantity({{ category.id }}, -1)">-</button>
                     </td>
                     <td>
                         <input type="text" id="quantity-{{ category.id }}" name="quantities[{{ category.id }}]" value="0" readonly style="width:40px; text-align:center;">
                     </td>
                     <td>
-                        <button type="button" onclick="updateQuantity({{ category.id }}, 1)">+</button>
+                        <button type="button" id="add-btn-{{ category.id }}" onclick="updateQuantity({{ category.id }}, 1)">+</button>
                     </td>
                 </tr>
             {% endfor %}
@@ -60,111 +60,163 @@
     <button type="submit" style="margin-top:10px;">Dodaj tarcze</button>
 </form>
 
-<a href="{{ path('scoreboard', {'id': id}) }}">Powrót</a>
-
 <script>
-const competitorsData = {{ competitors|json_encode|raw }};
-const competitorAttempts = {{ competitorAttempts|json_encode|raw }};
-let quantities = {};
+document.addEventListener('turbo:load', () => {
 
-function filterCompetitors() {
-    const input = document.getElementById('competitor-search').value.toLowerCase();
-    const list = document.getElementById('competitor-list');
-    list.innerHTML = '';
-    if (!input) {
-        list.style.display = 'none';
-        return;
-    }
+    window.quantities = window.quantities || {};
+    window.competitorsData = {{ competitors|json_encode|raw }};
+    window.competitorAttempts = {{ competitorAttempts|json_encode|raw }};
 
-    let found = false;
-    competitorsData.forEach(c => {
-        const fullName = `${c.id}. ${c.first_name} ${c.last_name}`.toLowerCase();
-        if (fullName.includes(input)) {
-            const li = document.createElement('li');
-            li.textContent = `${c.id}. ${c.first_name} ${c.last_name}`;
-            li.style.padding = '4px 6px';
-            li.style.cursor = 'pointer';
-            li.onmouseover = () => li.style.background = '#eee';
-            li.onmouseout = () => li.style.background = '';
-            li.onclick = () => selectCompetitor(c);
-            list.appendChild(li);
-            found = true;
+    window.filterCompetitors = function() {
+        let input = document.getElementById('competitor-search');
+        let list = document.getElementById('competitor-list');
+        if (!input || !list) return;
+
+        let value = input.value.toLowerCase();
+        list.innerHTML = '';
+
+        if (!value) {
+            list.style.display = 'none';
+            return;
         }
-    });
 
-    list.style.display = found ? 'block' : 'none';
-}
-
-function selectCompetitor(c) {
-    document.getElementById('competitor-search').value = `${c.id}. ${c.first_name} ${c.last_name}`;
-    document.getElementById('competitor-id').value = c.id;
-    document.getElementById('association').value = c.association_name || '';
-    updateCompetitorById(c.id);
-    document.getElementById('competitor-list').style.display = 'none';
-}
-
-function clearCompetitor() {
-    document.getElementById('competitor-search').value = '';
-    document.getElementById('competitor-id').value = '';
-    document.getElementById('association').value = '';
-    const rows = document.querySelectorAll('table tbody tr');
-    rows.forEach(row => {
-        row.children[1].textContent = 0;
-        const input = row.querySelector('input[id^="quantity-"]');
-        input.value = 0;
-        quantities[input.id.split('-')[1]] = 0;
-    });
-    document.getElementById('total-cost').textContent = '0';
-    document.getElementById('competitor-list').style.display = 'none';
-}
-
-function updateCompetitorById(selectedId) {
-    const attempts = competitorAttempts[selectedId]?.categories || [];
-    const quantityInputs = document.querySelectorAll('input[id^="quantity-"]');
-    quantityInputs.forEach(input => input.value = 0);
-    quantities = {};
-    const rows = document.querySelectorAll('table tbody tr');
-    rows.forEach(row => {
-        const categoryId = row.querySelector('input[id^="quantity-"]').id.split('-')[1];
-        const attempt = attempts.find(a => a.id == categoryId);
-        row.children[1].textContent = attempt ? attempt.count : 0;
-        quantities[categoryId] = 0;
-    });
-    updateTotalCost();
-}
-
-function updateQuantity(categoryId, delta) {
-    const input = document.getElementById(`quantity-${categoryId}`);
-    let value = parseInt(input.value) || 0;
-    value += delta;
-    if (value < 0) value = 0;
-    input.value = value;
-    quantities[categoryId] = value;
-    updateTotalCost();
-}
-
-function updateTotalCost() {
-    const selectedId = document.getElementById('competitor-id').value;
-    if (!selectedId) return;
-    const attempts = competitorAttempts[selectedId]?.categories || [];
-    let total = 0;
-    for (const categoryId in quantities) {
-        const qty = Number(quantities[categoryId]);
-        if (qty <= 0) continue;
-        const attempt = attempts.find(a => a.id == categoryId);
-        if (!attempt) continue;
-        if (attempt.count == 0) {
-            if (qty >= 1) {
-                total += Number(attempt.initial_fee);
-                total += Number(attempt.additional_fee) * (qty - 1);
+        let found = false;
+        window.competitorsData.forEach(c => {
+            let fullName = `${c.id}. ${c.first_name} ${c.last_name}`.toLowerCase();
+            if (fullName.includes(value)) {
+                let li = document.createElement('li');
+                li.textContent = `${c.id}. ${c.first_name} ${c.last_name}`;
+                li.style.padding = '4px 6px';
+                li.style.cursor = 'pointer';
+                li.onmouseover = () => li.style.background = '#eee';
+                li.onmouseout = () => li.style.background = '';
+                li.onclick = () => window.selectCompetitor(c);
+                list.appendChild(li);
+                found = true;
             }
-        } else {
-            total += Number(attempt.additional_fee) * qty;
-        }
-    }
-    document.getElementById('total-cost').textContent = total.toFixed(2);
-}
+        });
 
-clearCompetitor();
+        list.style.display = found ? 'block' : 'none';
+    };
+
+    window.selectCompetitor = function(c) {
+        let input = document.getElementById('competitor-search');
+        let hiddenInput = document.getElementById('competitor-id');
+        let association = document.getElementById('association');
+        if (input) input.value = `${c.id}. ${c.first_name} ${c.last_name}`;
+        if (hiddenInput) hiddenInput.value = c.id;
+        if (association) association.value = c.association_name || '';
+        window.updateCompetitorById(c.id);
+
+        let list = document.getElementById('competitor-list');
+        if (list) list.style.display = 'none';
+    };
+
+    window.clearCompetitor = function() {
+        let input = document.getElementById('competitor-search');
+        let hiddenInput = document.getElementById('competitor-id');
+        let association = document.getElementById('association');
+        if (input) input.value = '';
+        if (hiddenInput) hiddenInput.value = '';
+        if (association) association.value = '';
+
+        let rows = document.querySelectorAll('table tbody tr');
+        rows.forEach(row => {
+            if (!row.children[1]) return;
+            row.children[1].textContent = 0;
+            let input = row.querySelector('input[id^="quantity-"]');
+            if (!input) return;
+            input.value = 0;
+            let categoryId = input.id.split('-')[1];
+            window.quantities[categoryId] = 0;
+            let addBtn = document.getElementById(`add-btn-${categoryId}`);
+            if (addBtn) addBtn.disabled = false;
+        });
+
+        let totalEl = document.getElementById('total-cost');
+        if (totalEl) totalEl.textContent = '0';
+
+        let list = document.getElementById('competitor-list');
+        if (list) list.style.display = 'none';
+    };
+
+    window.updateCompetitorById = function(selectedId) {
+        let attempts = window.competitorAttempts[selectedId]?.categories || [];
+        window.quantities = {};
+
+        let rows = document.querySelectorAll('table tbody tr');
+        rows.forEach(row => {
+            let input = row.querySelector('input[id^="quantity-"]');
+            if (!input) return;
+            input.value = 0;
+            let categoryId = input.id.split('-')[1];
+            let attempt = attempts.find(a => a.id == categoryId);
+            row.children[1].textContent = attempt ? attempt.count : 0;
+            window.quantities[categoryId] = 0;
+
+            let addBtn = document.getElementById(`add-btn-${categoryId}`);
+            if (addBtn) addBtn.disabled = false;
+        });
+
+        window.updateTotalCost();
+    };
+
+    window.updateQuantity = function(categoryId, delta) {
+        let input = document.getElementById(`quantity-${categoryId}`);
+        if (!input) return;
+
+        let value = parseInt(input.value) || 0;
+        value += delta;
+        if (value < 0) value = 0;
+
+        let selectedId = document.getElementById('competitor-id')?.value;
+        let attempts = window.competitorAttempts[selectedId]?.categories || [];
+        let attempt = attempts.find(a => a.id == categoryId);
+        let alreadyPurchased = attempt ? attempt.count : 0;
+        let limit = attempt ? attempt.attempt_limit : 0;
+
+        if (limit != 0 && (value + alreadyPurchased) > limit) {
+            value = limit - alreadyPurchased;
+            if (value < 0) value = 0;
+        }
+
+        input.value = value;
+        window.quantities[categoryId] = value;
+
+        let addBtn = document.getElementById(`add-btn-${categoryId}`);
+        if (addBtn) addBtn.disabled = (limit != 0 && (value + alreadyPurchased) >= limit);
+
+        window.updateTotalCost();
+    };
+
+    window.updateTotalCost = function() {
+        let selectedId = document.getElementById('competitor-id')?.value;
+        if (!selectedId) return;
+        let attempts = window.competitorAttempts[selectedId]?.categories || [];
+        let total = 0;
+
+        for (let categoryId in window.quantities) {
+            let qty = Number(window.quantities[categoryId]);
+            if (qty <= 0) continue;
+            let attempt = attempts.find(a => a.id == categoryId);
+            if (!attempt) continue;
+            if (attempt.count == 0) {
+                if (qty >= 1) {
+                    total += Number(attempt.initial_fee);
+                    total += Number(attempt.additional_fee) * (qty - 1);
+                }
+            } else {
+                total += Number(attempt.additional_fee) * qty;
+            }
+        }
+
+        let totalEl = document.getElementById('total-cost');
+        if (totalEl) totalEl.textContent = total.toFixed(2);
+    };
+
+    window.clearCompetitor();
+});
 </script>
+
+<a href="{{ path('scoreboard', {'id': id}) }}">Powrót</a>
 {% endblock %}

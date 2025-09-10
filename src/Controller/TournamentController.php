@@ -9,6 +9,9 @@ use App\Form\TournamentType;
 use App\Repository\TournamentRepository;
 use App\Repository\CompetitorRepository;
 use App\Repository\CategoryRepository;
+use App\Repository\AttemptScoreRepository;
+use App\Repository\AttemptRepository;
+use App\Form\AttemptScoreType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,51 +32,63 @@ final class TournamentController extends AbstractController
 
     
     #[Route('/scoreboard/{id}', name: 'scoreboard', methods: ['GET'])]
-public function showScoreboard(TournamentRepository $tournamentRepository, int $id): Response
-{
-    $tournament = $tournamentRepository->find($id);
+    public function showScoreboard(TournamentRepository $tournamentRepository, int $id): Response
+    {
+        $tournament = $tournamentRepository->find($id);
 
-    $categories = $tournamentRepository->getCategories($id);
-    $results = $tournamentRepository->getCompetitorswithScores($id, $categories);
+        $categories = $tournamentRepository->getCategories($id);
+        $results = $tournamentRepository->getCompetitorswithScores($id, $categories);
 
-    $categoryLimits = [];
-    foreach ($categories as $cat) {
-        $categoryLimits[$cat['id']] = $cat['attempt_limit'];
-    }
-
-    $groupedResults = [];
-    foreach ($results as $r) {
-        $name = $r['competitor_name'];
-        $catId = $r['category_id'];
-        $score = (float)$r['score'];
-
-        $groupedResults[$name][$catId][] = $score;
-    }
-
-    foreach ($groupedResults as $name => &$categoriesScores) {
-        foreach ($categoryLimits as $catId => $maxAttempts) {
-            if (!isset($categoriesScores[$catId])) {
-                $categoriesScores[$catId] = [];
-            }
-            $categoriesScores[$catId] = array_pad($categoriesScores[$catId], $maxAttempts, 0);
-            $categoriesScores[$catId][] = max($categoriesScores[$catId]);
+        $categoryLimits = [];
+        foreach ($categories as $cat) {
+            $categoryLimits[$cat['id']] = $cat['attempt_limit'];
         }
-        ksort($categoriesScores);
-    }
-    unset($categoriesScores);
 
-    $groupedCategories = [];
-    foreach ($categories as $cat) {
-        $group = explode(' ', $cat['group_id'])[0];
-        $groupedCategories[$group][] = $cat;
-    }
+        $groupedResults = [];
+        foreach ($results as $r) {
+            $name = $r['competitor_name'];
+            $catId = $r['category_id'];
+            $score = (float)$r['score'];
 
-    return $this->render('tournament/scoreboard.html.twig', [
-        'tournament' => $tournament,
-        'results' => $groupedResults,
-        'groupedCategories' => $groupedCategories
-    ]);
-}
+            $groupedResults[$name][$catId][] = $score;
+        } 
+        foreach ($groupedResults as $name => &$categoriesScores) {
+            foreach ($categoryLimits as $catId => $maxAttempts) {
+                if (!isset($categoriesScores[$catId])) {
+                    $categoriesScores[$catId] = [];
+                }
+
+                $scores = $categoriesScores[$catId];
+                rsort($scores);
+
+                if ($maxAttempts === 0 || $maxAttempts > 5) {
+                    $scores = array_slice($scores, 0, 5);
+                    $scores = array_pad($scores, 5, 0);
+                } else {
+                    $scores = array_slice($scores, 0, $maxAttempts);
+                    $scores = array_pad($scores, $maxAttempts, 0);
+                }
+
+                $scores[] = max($scores);
+
+                $categoriesScores[$catId] = $scores;
+            }
+            ksort($categoriesScores);
+        }
+        unset($categoriesScores);
+
+
+        $groupedCategories = [];
+        foreach ($categories as $cat) {
+            $group = explode(' ', $cat['group_id'])[0];
+            $groupedCategories[$group][] = $cat;
+        }
+        return $this->render('tournament/scoreboard.html.twig', [
+            'tournament' => $tournament,
+            'results' => $groupedResults,
+            'groupedCategories' => $groupedCategories
+        ]);
+    }
 
     #[Route('/tournament/admin/new', name: 'app_tournament_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response

@@ -21,37 +21,38 @@ class TournamentRepository extends ServiceEntityRepository
 
     $sql = "
         WITH attempt_scores AS (
-            SELECT 
-                a.id AS attempt_id,
-                a.category_id,
-                SUM(s.score) AS total_score
-            FROM attempt a
-            JOIN attempt_score s 
-                ON s.attempt_id = a.id
-            GROUP BY a.id, a.category_id
-        ),
-        ranked_scores AS (
-            SELECT 
-                category_id,
-                total_score,
-                DENSE_RANK() OVER (PARTITION BY category_id ORDER BY total_score DESC) AS rnk
-            FROM attempt_scores
-        )
         SELECT 
-            c.id,
-            c.name,
-            c.attempt_limit,
-            cg.description,
-            c.category_group_id AS group_id,
-            COALESCE(rs.total_score, 1) AS third_best_score,
-        	c.initial_fee,
-        	c.additional_fee
-        FROM category c
-        LEFT JOIN category_group cg 
-            ON c.category_group_id = cg.id
-        LEFT JOIN ranked_scores rs
-            ON rs.category_id = c.id AND rs.rnk = 3
-        ORDER BY c.category_group_id, c.id;
+            a.id AS attempt_id,
+            a.category_id,
+            SUM(s.score) AS total_score
+        FROM attempt a
+        JOIN attempt_score s 
+            ON s.attempt_id = a.id
+        GROUP BY a.id, a.category_id
+    ),
+    ranked_scores AS (
+        SELECT 
+            category_id,
+            total_score,
+            ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY total_score DESC) AS rn
+        FROM attempt_scores
+    )
+    SELECT 
+        c.id,
+        c.name,
+        c.attempt_limit,
+        cg.description,
+        c.category_group_id AS group_id,
+        COALESCE(rs.total_score, 1) AS third_best_score,
+        c.initial_fee,
+        c.additional_fee,
+        cg.scores_per_attempt
+    FROM category c
+    LEFT JOIN category_group cg 
+        ON c.category_group_id = cg.id
+    LEFT JOIN ranked_scores rs
+        ON rs.category_id = c.id AND rs.rn = 3
+    ORDER BY c.category_group_id, c.id;
     ";
 
     return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);

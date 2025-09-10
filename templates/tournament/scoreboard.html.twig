@@ -30,7 +30,8 @@
             <tr>
                 <th rowspan="2">Name</th>
                 {% for cat in categories %}
-                    <th colspan="{{ cat.attempt_limit + 1 }}">{{ cat.name }}</th>
+                    {% set limit = cat.attempt_limit == 0 ? 5 : cat.attempt_limit %}
+                    <th colspan="{{ limit + 1 }}">{{ cat.name }}</th>
                 {% endfor %}
             </tr>
         </thead>
@@ -40,9 +41,10 @@
                     <td>{{ name }}</td>
                     {% for cat in categories %}
                         {% set scores = scoresByCategory[cat.id] %}
-                        {% for i in 0..5 %}
-                                <td class="{% if i == 5 %}{{ scores[i] is defined and scores[i] >= cat.third_best_score ? 'passing-score' : 'best-score' }}{% endif %}">
-                                {{ scores[i] is defined ? scores[i] : '' }}
+                        {% set maxAttempts = (cat.attempt_limit == 0 or cat.attempt_limit > 5) ? 5 : cat.attempt_limit %}
+                        {% for i in 0..maxAttempts %}
+                            <td class="{% if i == maxAttempts %}{{ scores[i] is defined and scores[i] >= cat.third_best_score ? 'passing-score' : 'best-score' }}{% endif %}">
+                            {{ scores[i] is defined ? scores[i] : '' }}
                             </td>
                         {% endfor %}
                     {% endfor %}

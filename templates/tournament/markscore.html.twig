@@ -3,12 +3,6 @@
 
 <h2>Zapisz wynik tarczy</h2>
 
-<h3> {{id}} </h3>
-
-{% for competitor in competitors %}
-<h3> {{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }} </h3>
-{% endfor %}
-
 <div style="margin-top: 20px; position: relative; width: 500px;">
     <input type="text" id="competitorInput" placeholder="Zawodnik" style="width: 100%; padding: 8px; box-sizing: border-box;">
     <ul id="competitorList" style="list-style: none; padding: 0; margin: 0; border: 1px solid #ccc; position: absolute; width: 100%; max-height: 150px; overflow-y: auto; background: #fff; display: none; z-index: 1000;">
@@ -89,7 +83,7 @@ function fetchAttempts(competitorId) {
                 <td><input type="number" name="score1_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
                 <td><input type="number" name="score2_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
                 <td><input type="number" name="score3_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
-                <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, this)">Submit</button></td>
+                <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, this)">Zapisz</button></td>
             </tr>
         `;
     });

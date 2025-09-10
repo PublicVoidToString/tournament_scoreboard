@@ -1,12 +1,12 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}New Competitor{% endblock %}
+{% block title %}Nowy Zawodnik{% endblock %}
 
 {% block body %}
-    <h1>Create new Competitor</h1>
+    <h2>Dodaj Zawodnika</h2>
 
     {{ include('competitor/_form.html.twig') }}
 
-    <a href="{{ path('scoreboard', {'id': tournamentid}) }}">back to list</a>
+    <a href="{{ path('scoreboard', {'id': tournamentid}) }}">Powrót</a>
 
 {% endblock %}

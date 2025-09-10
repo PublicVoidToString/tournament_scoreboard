@@ -3,8 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Tournament;
+use App\Entity\Attempt;
 use App\Form\TournamentType;
 use App\Repository\TournamentRepository;
+use App\Repository\CompetitorRepository;
+use App\Repository\CategoryRepository;
+use App\Repository\AttemptScoreRepository;
+use App\Repository\AttemptRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -71,7 +76,7 @@ public function showScoreboard(TournamentRepository $tournamentRepository, int $
         $groupedCategories[$group][] = $cat;
     }
 
-    dump($groupedCategories);
+    //dump($groupedCategories);
     // Renderowanie widoku z podziałem na grupy
     return $this->render('tournament/scoreboard.html.twig', [
         'tournament' => $tournament,
@@ -136,4 +141,161 @@ public function showScoreboard(TournamentRepository $tournamentRepository, int $
 
         return $this->redirectToRoute('app_tournament_index', [], Response::HTTP_SEE_OTHER);
     }
+
+#[Route('/tournament/admin/addScore/{id}', name: 'app_tournament_add_score', methods: ['GET','POST'])]
+public function addScore(
+    Request $request,
+    int $id,
+    TournamentRepository $tournamentRepository,
+    CompetitorRepository $competitorRepository,
+    CategoryRepository $categoryRepository,
+    EntityManagerInterface $em
+): Response {
+    $tournament = $tournamentRepository->find($id);
+
+    if (!$tournament) {
+        throw $this->createNotFoundException('Nie znaleziono turnieju');
+    }
+
+    // POST – zapis nowych prób
+    if ($request->isMethod('POST')) {
+        $competitorId = $request->request->get('competitor');
+        $quantities   = $request->request->all('quantities');
+
+        if ($competitorId && $quantities) {
+            $competitor = $competitorRepository->find($competitorId);
+
+            foreach ($quantities as $categoryId => $qty) {
+                $qty = (int)$qty;
+                if ($qty > 0) {
+                    $category = $categoryRepository->find($categoryId);
+                    if (!$category) {
+                        continue;
+                    }
+
+                    for ($i = 0; $i < $qty; $i++) {
+                        $attempt = new Attempt();
+                        $attempt->setCompetitor($competitor);
+                        $attempt->setCategory($category);
+
+                        $em->persist($attempt);
+                    }
+                }
+            }
+            $em->flush();
+        }
+
+        return $this->redirectToRoute('scoreboard', ['id' => $id]);
+    }
+
+    // GET – render formularza
+    $categories = $tournamentRepository->getCategories($id);
+    $attempts   = $tournamentRepository->getAttempts($id);
+    $competitors = $competitorRepository->findAll();
+
+    $competitorAttempts = [];
+    $attemptMap = [];
+
+    foreach ($attempts as $attempt) {
+        $competitorId = $attempt['competitor_id'];
+        $categoryId   = $attempt['category_id'];
+
+        if (!isset($attemptMap[$competitorId])) {
+            $attemptMap[$competitorId] = [];
+        }
+        if (!isset($attemptMap[$competitorId][$categoryId])) {
+            $attemptMap[$competitorId][$categoryId] = 0;
+        }
+        $attemptMap[$competitorId][$categoryId]++;
+    }
+
+    foreach ($competitors as $competitor) {
+        $competitorId = $competitor['id'];
+
+        $competitorAttempts[$competitorId] = [
+            'id' => $competitorId,
+            'first_name' => $competitor['first_name'],
+            'last_name' => $competitor['last_name'],
+            'association_name' => $competitor['association_name'],
+            'categories' => []
+        ];
+
+        foreach ($categories as $category) {
+            $categoryId = $category['id'];
+
+            $competitorAttempts[$competitorId]['categories'][] = [
+                'id' => $categoryId,
+                'name' => $category['name'],
+                'initial_fee' => $category['initial_fee'],
+                'additional_fee' => $category['additional_fee'],
+                'count' => $attemptMap[$competitorId][$categoryId] ?? 0
+            ];
+        }
+    }
+
+    return $this->render('tournament/addscore.html.twig', [
+        'id' => $id,
+        'categories' => $categories,
+        'competitors' => $competitors,
+        'competitorAttempts' => $competitorAttempts,
+    ]);
+}
+
+
+#[Route('/tournament/admin/markScore/{id}', name: 'app_tournament_mark_score', methods: ['GET','POST'])]
+public function markScore(
+    Request $request,
+    int $id,
+    TournamentRepository $tournamentRepository,
+    AttemptRepository $attemptRepository,
+    EntityManagerInterface $em
+): Response
+{
+    $attempts   = $tournamentRepository->getEmptyAttempts($id); // zwraca listę Attempt z polem 'id'
+    $categories = $tournamentRepository->getCategories($id);
+    $tournament = $tournamentRepository->find($id);
+
+    if ($request->isMethod('POST')) {
+        $attemptId = $request->request->get('attempt_id');
+        $scores = $request->request->all('scores');
+
+        if (!$attemptId || empty($scores)) {
+            $this->addFlash('error', 'Wszystkie pola muszą być wypełnione.');
+            return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
+        }
+
+        // walidacja wyników: liczby całkowite 0–100
+        foreach ($scores as $scoreValue) {
+            if (!is_numeric($scoreValue) || (int)$scoreValue < 0 || (int)$scoreValue > 100) {
+                $this->addFlash('error', 'Wyniki muszą być liczbami całkowitymi od 0 do 100.');
+                return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
+            }
+        }
+
+        $attempt = $attemptRepository->find($attemptId);
+        if (!$attempt) {
+            $this->addFlash('error', 'Nie znaleziono wybranej próby.');
+            return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
+        }
+
+        foreach ($scores as $scoreValue) {
+            $attemptScore = new \App\Entity\AttemptScore();
+            $attemptScore->setScore((int)$scoreValue);
+            $attemptScore->setAttempt($attempt);
+            $em->persist($attemptScore);
+        }
+
+        $em->flush();
+        $this->addFlash('success', 'Wyniki zapisane pomyślnie.');
+        return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
+    }
+
+    return $this->render('tournament/markscore.html.twig', [
+        'tournament' => $tournament,
+        'attempts' => $attempts,
+        'categories' => $categories
+    ]);
+}
+
+
 }

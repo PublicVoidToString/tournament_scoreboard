@@ -1,0 +1,160 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nowa Tarcza{% endblock %}
+
+{% block body %}
+<h2>Zakup nowej tarczy</h2>
+
+<form method="post" action="{{ path('app_tournament_add_score', {'id': id}) }}">
+    <!-- Wyszukiwarka zawodnika -->
+    <div>
+        <label for="competitor-search">Zawodnik:</label>
+        <input type="text" id="competitor-search" placeholder="Wpisz id, imię lub nazwisko" oninput="filterCompetitors()">
+        <button type="button" onclick="clearCompetitor()" style="margin-left:5px;">Usuń</button>
+        <ul id="competitor-list" style="border:1px solid #ccc; max-height:150px; overflow-y:auto; padding:0; margin:0; list-style:none;"></ul>
+    </div>
+
+    <input type="hidden" id="competitor-id" name="competitor">
+
+    <div>
+        <label for="association">Bractwo:</label>
+        <input type="text" id="association" disabled>
+    </div>
+
+    <!-- Tabela kategorii -->
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Kategoria</th>
+                <th>Wcześniej zakupiono</th>
+                <th>Usuń</th>
+                <th>Ilość</th>
+                <th>Dodaj</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+                <tr>
+                    <td>{{ category.name }}</td>
+                    <td>0</td>
+                    <td>
+                        <button type="button" onclick="updateQuantity({{ category.id }}, -1)">-</button>
+                    </td>
+                    <td>
+                        <input type="text" id="quantity-{{ category.id }}" name="quantities[{{ category.id }}]" value="0" readonly style="width:40px; text-align:center;">
+                    </td>
+                    <td>
+                        <button type="button" onclick="updateQuantity({{ category.id }}, 1)">+</button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top:10px;">
+        <h3>Koszt nowych tarcz: <span id="total-cost">0</span> PLN</h3>
+    </div>
+
+    <button type="submit" style="margin-top:10px;">Dodaj tarcze</button>
+</form>
+
+<a href="{{ path('scoreboard', {'id': id}) }}">Powrót</a>
+
+<script>
+const competitorsData = {{ competitors|json_encode|raw }};
+const competitorAttempts = {{ competitorAttempts|json_encode|raw }};
+let quantities = {};
+
+// Szukanie zawodnika
+function filterCompetitors() {
+    const input = document.getElementById('competitor-search').value.toLowerCase();
+    const list = document.getElementById('competitor-list');
+    list.innerHTML = '';
+    if (!input) return;
+
+    competitorsData.forEach(c => {
+        const fullName = `${c.id}. ${c.first_name} ${c.last_name}`.toLowerCase();
+        if (fullName.includes(input)) {
+            const li = document.createElement('li');
+            li.textContent = `${c.id}. ${c.first_name} ${c.last_name}`;
+            li.style.padding = '2px 5px';
+            li.style.cursor = 'pointer';
+            li.onclick = () => selectCompetitor(c);
+            list.appendChild(li);
+        }
+    });
+}
+
+function selectCompetitor(c) {
+    document.getElementById('competitor-search').value = `${c.id}. ${c.first_name} ${c.last_name}`;
+    document.getElementById('competitor-id').value = c.id;
+    document.getElementById('association').value = c.association_name || '';
+    updateCompetitorById(c.id);
+    document.getElementById('competitor-list').innerHTML = '';
+}
+
+function clearCompetitor() {
+    document.getElementById('competitor-search').value = '';
+    document.getElementById('competitor-id').value = '';
+    document.getElementById('association').value = '';
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        row.children[1].textContent = 0;
+        const input = row.querySelector('input[id^="quantity-"]');
+        input.value = 0;
+        quantities[input.id.split('-')[1]] = 0;
+    });
+    document.getElementById('total-cost').textContent = '0';
+}
+
+function updateCompetitorById(selectedId) {
+    const attempts = competitorAttempts[selectedId]?.categories || [];
+    const quantityInputs = document.querySelectorAll('input[id^="quantity-"]');
+    quantityInputs.forEach(input => input.value = 0);
+    quantities = {};
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        const categoryId = row.querySelector('input[id^="quantity-"]').id.split('-')[1];
+        const attempt = attempts.find(a => a.id == categoryId);
+        row.children[1].textContent = attempt ? attempt.count : 0;
+        quantities[categoryId] = 0;
+    });
+    updateTotalCost();
+}
+
+function updateQuantity(categoryId, delta) {
+    const input = document.getElementById(`quantity-${categoryId}`);
+    let value = parseInt(input.value) || 0;
+    value += delta;
+    if (value < 0) value = 0;
+    input.value = value;
+    quantities[categoryId] = value;
+    updateTotalCost();
+}
+
+function updateTotalCost() {
+    const selectedId = document.getElementById('competitor-id').value;
+    if (!selectedId) return;
+    const attempts = competitorAttempts[selectedId]?.categories || [];
+    let total = 0;
+    for (const categoryId in quantities) {
+        const qty = Number(quantities[categoryId]);
+        if (qty <= 0) continue;
+        const attempt = attempts.find(a => a.id == categoryId);
+        if (!attempt) continue;
+        if (attempt.count == 0) {
+            if (qty >= 1) {
+                total += Number(attempt.initial_fee);
+                total += Number(attempt.additional_fee) * (qty - 1);
+            }
+        } else {
+            total += Number(attempt.additional_fee) * qty;
+        }
+    }
+    document.getElementById('total-cost').textContent = total.toFixed(2);
+}
+
+// Domyślnie brak wybranego zawodnika
+clearCompetitor();
+</script>
+{% endblock %}

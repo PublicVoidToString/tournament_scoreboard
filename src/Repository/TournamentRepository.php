@@ -18,8 +18,8 @@ class TournamentRepository extends ServiceEntityRepository
 
     public function getCategories(int $tournamentId): array{
         return $this->createQueryBuilder('tournament')
-            ->select('category.id, category.name, category.attempt_limit, category_group.description , category_group.id AS group_id')
-            ->join('tournament.categories', 'category')
+            ->select('category.id, category.name, category.attempt_limit, category_group.description , category_group.id AS group_id, category.initial_fee, category.additional_fee')
+            ->leftjoin('tournament.categories', 'category')
             ->join('category.category_group', 'category_group')
             ->where('tournament.id = :tournamentId')
             ->setParameter('tournamentId', $tournamentId)  
@@ -28,12 +28,30 @@ class TournamentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    public function getAttempts(int $tournamentId): array{
+        return $this->createQueryBuilder('tournament')
+            ->select('
+            attempt.id AS attempt_id,
+            competitor.id AS competitor_id,
+            category.id AS category_id,
+            category.initial_fee,
+            category.additional_fee
+            ')
+            ->leftjoin('tournament.categories', 'category')
+            ->join('category.attempts', 'attempt')
+            ->join('attempt.competitor', 'competitor')
+            ->where('tournament.id = :tournamentId')
+            ->setParameter('tournamentId', $tournamentId)  
+            ->getQuery()
+            ->getResult();
+    }
+    
     public function getCompetitorsWithScores(int $tournamentId, array $categories): array
     {
         $categoryIds = array_map(fn($c) => $c['id'], $categories);
 
         return $this->createQueryBuilder('tournament')
-            ->select('CONCAT(competitor.first_name, \' \',  competitor.last_name) AS competitor_name , category.id AS category_id, attempt.attempt_number AS attempt_number, SUM(attemptScore.score) AS score')
+            ->select('CONCAT(competitor.first_name, \' \',  competitor.last_name) AS competitor_name , category.id AS category_id, SUM(attemptScore.score) AS score')
             ->join('tournament.categories', 'category')
             ->join('category.attempts', 'attempt')
             ->join('attempt.competitor', 'competitor')
@@ -43,7 +61,7 @@ class TournamentRepository extends ServiceEntityRepository
             ->setParameter('tournamentId', $tournamentId)
             ->setParameter('categoryIds', $categoryIds)
             ->groupBy('category.id, competitor.id, attempt.id')
-            ->orderBy('competitor.id, category.id, attempt.attempt_number')
+            ->orderBy('competitor.id, category.id')
             ->getQuery()
             ->getResult();
     }
@@ -61,7 +79,7 @@ class TournamentRepository extends ServiceEntityRepository
     }
 
     public function getScoreboardData(int $tournamentId): array
-    {
+    { //TODO IS SERACHING ALL TOURNAMENTS SHOULD ONLY BE SEARCHING ONE
         return $this->createQueryBuilder('tournament')
             ->select('
                 category.id AS category_id,
@@ -80,4 +98,26 @@ class TournamentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+public function getEmptyAttempts(int $tournamentId): array
+{
+    return $this->createQueryBuilder('tournament')
+        ->select('
+            category.id AS category_id,
+            category.name AS category_name,
+            category.attempt_limit AS category_attempt_limit,
+            competitor.id AS competitor_id,
+            CONCAT(competitor.first_name, \' \', competitor.last_name) AS competitor_name
+        ')
+        ->leftJoin('tournament.categories', 'category')
+        ->join('category.attempts', 'attempt')
+        ->join('attempt.competitor', 'competitor')
+        ->leftJoin('attempt.attemptScores', 'score')   // zakładam że relacja nazywa się "scores"
+        ->where('tournament.id = :tournamentId')
+        ->andWhere('score.id IS NULL')
+        ->setParameter('tournamentId', $tournamentId)
+        ->getQuery()
+        ->getResult();
+}
+    
 }

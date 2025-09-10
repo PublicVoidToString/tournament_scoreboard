@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Zapisz wynik tarczy{% endblock %}
+
+{% block body %}
+
+<h2>Zapisz wynik tarczy</h2>
+
+<form id="score-form" action="{{ path('app_tournament_mark_score', {id: tournament.id}) }}" method="post">
+    <label for="category-select">Wybierz kategorię:</label>
+    <select id="category-select" name="category_id" required>
+        <option value="">-- Wybierz kategorię --</option>
+        {% for category in categories %}
+            <option value="{{ category.id }}" data-attempt-limit="{{ category.attempt_limit }}">
+                {{ category.name }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <div id="attempt-container" style="display:none; margin-top:10px;">
+        <label for="attempt-select">Wybierz próbę:</label>
+        <select id="attempt-select" name="attempt_id" required>
+            <!-- dynamicznie wypełniane -->
+        </select>
+    </div>
+
+    <div id="scores-container" style="display:none; margin-top:10px;">
+        <!-- dynamicznie generowane pola dla scores[] -->
+    </div>
+
+    <div id="submit-container" style="display:none; margin-top:10px;">
+        <button type="submit">Dodaj wynik</button>
+    </div>
+</form>
+
+<a href="{{ path('app_tournament_index') }}" class="button">Powrót</a>
+
+<script>
+    const attempts = {{ attempts|json_encode|raw }};
+    const categorySelect = document.getElementById('category-select');
+    const attemptContainer = document.getElementById('attempt-container');
+    const attemptSelect = document.getElementById('attempt-select');
+    const scoresContainer = document.getElementById('scores-container');
+    const submitContainer = document.getElementById('submit-container');
+
+    function generateScores(limit) {
+        scoresContainer.innerHTML = '';
+        for (let i = 1; i <= 3; i++) {
+            const label = document.createElement('label');
+            label.setAttribute('for', `score_${i}`);
+            label.textContent = `Wynik ${i}:`;
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.name = 'scores[]';
+            input.id = `score_${i}`;
+            input.required = true;
+            scoresContainer.appendChild(label);
+            scoresContainer.appendChild(input);
+            scoresContainer.appendChild(document.createElement('br'));
+        }
+        scoresContainer.style.display = 'block';
+        submitContainer.style.display = 'block';
+    }
+
+    categorySelect.addEventListener('change', function() {
+        const categoryId = parseInt(this.value);
+        scoresContainer.innerHTML = '';
+        submitContainer.style.display = 'none';
+
+        if (!categoryId) {
+            attemptContainer.style.display = 'none';
+            return;
+        }
+
+        // filtrujemy attempts dla wybranej kategorii
+        const filteredAttempts = attempts.filter(a => parseInt(a.category_id) === categoryId);
+        attemptSelect.innerHTML = '';
+
+        if (filteredAttempts.length === 0) {
+            attemptContainer.style.display = 'none';
+            scoresContainer.innerHTML = '<p>Brak dostępnych prób dla tej kategorii.</p>';
+            scoresContainer.style.display = 'block';
+            return;
+        }
+
+        filteredAttempts.forEach(a => {
+            const option = document.createElement('option');
+            option.value = a.id; // <- id konkretnego Attempt
+            option.textContent = a.competitor_name;
+            attemptSelect.appendChild(option);
+        });
+
+        attemptContainer.style.display = 'block';
+        generateScores(parseInt(this.selectedOptions[0].dataset.attemptLimit));
+    });
+
+    attemptSelect.addEventListener('change', function() {
+        const categoryOption = categorySelect.selectedOptions[0];
+        const limit = parseInt(categoryOption.dataset.attemptLimit);
+        generateScores(limit);
+    });
+</script>
+
+{% endblock %}

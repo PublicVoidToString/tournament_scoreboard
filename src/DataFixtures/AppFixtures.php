@@ -159,25 +159,21 @@ class AppFixtures extends Fixture
         $manager->persist($tarcza);
 
         $attemptPierwszy = new Attempt();
-        $attemptPierwszy->setAttemptNumber(1);
         $attemptPierwszy->setCategory($tarczaBracka);
         $attemptPierwszy->setCompetitor($pierwszy);
         $manager->persist($attemptPierwszy);
         
         $attemptPierwszy2 = new Attempt();
-        $attemptPierwszy2->setAttemptNumber(2);
         $attemptPierwszy2->setCategory($tarczaBracka);
         $attemptPierwszy2->setCompetitor($pierwszy);
         $manager->persist($attemptPierwszy2);
 
         $attemptDrugi = new Attempt();
-        $attemptDrugi->setAttemptNumber(1);
         $attemptDrugi->setCategory($tarczaBracka);
         $attemptDrugi->setCompetitor($drugi);
         $manager->persist($attemptDrugi);
 
         $attemptDrugi2 = new Attempt();
-        $attemptDrugi2->setAttemptNumber(1);
         $attemptDrugi2->setCategory($tarczaSponsora);
         $attemptDrugi2->setCompetitor($drugi);
         $manager->persist($attemptDrugi2);

@@ -40,4 +40,13 @@ class CompetitorRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    public function findAll(): array{
+        return $this->createQueryBuilder('competitor')
+            ->select('competitor.id, competitor.first_name, competitor.last_name, association.name as association_name')
+            ->leftJoin('competitor.association', 'association')
+            ->orderBy('competitor.id')
+            ->getQuery()
+            ->getResult();
+    }
 }

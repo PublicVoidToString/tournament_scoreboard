@@ -7,10 +7,23 @@ h2 {
   border-radius: 10px;
 }
 
+h3 {
+  display: inline-block; /* zmienia h3 na element "dopasowany do treści" */
+  font-weight: bold;
+  font-size: 1.5em;
+  border: 2px solid #aaa;
+  border-radius: 10px;
+  padding: 0.2em 0.5em; /* opcjonalnie, aby nie przylegał tekst do krawędzi */
+}
+
+.bought {
+    background-color: #0067d4;
+}
+
 table {
   border-collapse: separate;
   width: auto;
-  max-width: 100%; /* nie przekracza szerokości strony */
+  max-width: 100%;
   margin-bottom: 20px;
   table-layout: auto;
 }
@@ -55,4 +68,46 @@ td.best-score {
   background-color: #00ff0022;
   border-right: 2px solid #000000;
   font-weight: bold;
+}
+
+.icon-button {
+  font-size: 1.2em;
+  min-width: 50px;
+  margin-top:0.1em;
+  margin-bottom:0.1em;
+}
+
+.admin-menu {
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #222;
+    z-index: 1000;
+}
+
+.admin-menu__list {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.admin-menu__item {
+    flex: 1;
+    text-align: center;
+    border: 1px solid #444;
+}
+
+.admin-menu__link {
+    display: block;
+    padding: 12px 0;
+    color: #fff;
+    text-decoration: none;
+    background: #333;
+    transition: background 0.3s;
+}
+
+.admin-menu__link:hover {
+    background: #555;
 }

@@ -3,6 +3,22 @@
 {% block title %}Wyniki{% endblock %}
 
 {% block body %}
+
+
+    {% if is_granted('ROLE_ADMIN') %}
+        <nav class="admin-menu">
+            <ul class="admin-menu__list">
+                <li class="admin-menu__item"><a href={{ path('app_tournament_add_score', {'id': tournament.id}) }} class="admin-menu__link">Sprzedaj Tarczę</a></li>
+                <li class="admin-menu__item"><a href={{ path('app_tournament_mark_score', {'id': tournament.id}) }} class="admin-menu__link">Zapisz wynik tarczy</a></li>
+                <li class="admin-menu__item"><a href="#" class="admin-menu__link">Zaawansowane ustawienia turnieju</a></li>
+                <li class="admin-menu__item admin-menu__logout">
+                    <a href="{{ path('app_logout') }}" class="admin-menu__link">Wyloguj</a>
+                </li>
+            </ul>
+        </nav>
+    {% endif %}
+
+
 <h2>{{ tournament.name }}</h2>
 
 {% for group, categories in groupedCategories %}

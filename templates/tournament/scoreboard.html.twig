@@ -8,8 +8,10 @@
     {% if is_granted('ROLE_ADMIN') %}
         <nav class="admin-menu">
             <ul class="admin-menu__list">
+                <li class="admin-menu__item"><a href={{ path('app_competitor_new', {'id': tournament.id}) }} class="admin-menu__link">Dodaj Zawodnika</a></li>
                 <li class="admin-menu__item"><a href={{ path('app_tournament_add_score', {'id': tournament.id}) }} class="admin-menu__link">Sprzedaj Tarczę</a></li>
                 <li class="admin-menu__item"><a href={{ path('app_tournament_mark_score', {'id': tournament.id}) }} class="admin-menu__link">Zapisz wynik tarczy</a></li>
+                <li class="admin-menu__item"><a href={{ path('app_tournament_mark_score', {'id': tournament.id}) }} class="admin-menu__link">Wymień tarczę</a></li>
                 <li class="admin-menu__item"><a href="#" class="admin-menu__link">Zaawansowane ustawienia turnieju</a></li>
                 <li class="admin-menu__item admin-menu__logout">
                     <a href="{{ path('app_logout') }}" class="admin-menu__link">Wyloguj</a>
@@ -38,8 +40,8 @@
                     <td>{{ name }}</td>
                     {% for cat in categories %}
                         {% set scores = scoresByCategory[cat.id] %}
-                        {% for i in 0..cat.attempt_limit %}
-                            <td class="{{ i == cat.attempt_limit ? 'last-score' : '' }}">
+                        {% for i in 0..5 %}
+                                <td class="{% if i == 5 %}{{ scores[i] is defined and scores[i] >= cat.third_best_score ? 'passing-score' : 'best-score' }}{% endif %}">
                                 {{ scores[i] is defined ? scores[i] : '' }}
                             </td>
                         {% endfor %}

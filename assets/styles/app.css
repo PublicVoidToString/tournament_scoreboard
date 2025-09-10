@@ -8,12 +8,18 @@ h2 {
 }
 
 h3 {
-  display: inline-block; /* zmienia h3 na element "dopasowany do treści" */
+  display: inline-block;
   font-weight: bold;
   font-size: 1.5em;
   border: 2px solid #aaa;
   border-radius: 10px;
-  padding: 0.2em 0.5em; /* opcjonalnie, aby nie przylegał tekst do krawędzi */
+  padding: 0.2em 0.5em;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .bought {
@@ -58,13 +64,13 @@ tbody td:first-child {
   font-weight: bold;
 }
 
-td.last-score {
+td.best-score {
   background-color: #ff000022;
   border-right: 2px solid #000000;
   font-weight: bold;
 }
 
-td.best-score {
+td.passing-score {
   background-color: #00ff0022;
   border-right: 2px solid #000000;
   font-weight: bold;

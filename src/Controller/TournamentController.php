@@ -4,17 +4,17 @@ namespace App\Controller;
 
 use App\Entity\Tournament;
 use App\Entity\Attempt;
+use App\Entity\AttemptScore;
 use App\Form\TournamentType;
 use App\Repository\TournamentRepository;
 use App\Repository\CompetitorRepository;
 use App\Repository\CategoryRepository;
-use App\Repository\AttemptScoreRepository;
-use App\Repository\AttemptRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 #[Route('/')]
 final class TournamentController extends AbstractController
@@ -31,20 +31,16 @@ final class TournamentController extends AbstractController
     #[Route('/scoreboard/{id}', name: 'scoreboard', methods: ['GET'])]
 public function showScoreboard(TournamentRepository $tournamentRepository, int $id): Response
 {
-    // Pobranie turnieju
     $tournament = $tournamentRepository->find($id);
 
-    // Pobranie kategorii i wyników
     $categories = $tournamentRepository->getCategories($id);
     $results = $tournamentRepository->getCompetitorswithScores($id, $categories);
 
-    // Tworzenie mapy limitów prób dla każdej kategorii
     $categoryLimits = [];
     foreach ($categories as $cat) {
         $categoryLimits[$cat['id']] = $cat['attempt_limit'];
     }
 
-    // Grupowanie wyników po zawodniku i kategorii
     $groupedResults = [];
     foreach ($results as $r) {
         $name = $r['competitor_name'];
@@ -54,7 +50,6 @@ public function showScoreboard(TournamentRepository $tournamentRepository, int $
         $groupedResults[$name][$catId][] = $score;
     }
 
-    // Uzupełnianie brakujących prób zerami i dodanie ostatniego wiersza z max
     foreach ($groupedResults as $name => &$categoriesScores) {
         foreach ($categoryLimits as $catId => $maxAttempts) {
             if (!isset($categoriesScores[$catId])) {
@@ -67,17 +62,12 @@ public function showScoreboard(TournamentRepository $tournamentRepository, int $
     }
     unset($categoriesScores);
 
-    // Grupowanie kategorii po typie broni (np. KBKS, Pneumatyka, Łuk)
     $groupedCategories = [];
-    //dd($categories);
     foreach ($categories as $cat) {
-        // Możesz tu zmienić logikę grupowania, jeśli masz pole "group" w bazie
         $group = explode(' ', $cat['group_id'])[0];
         $groupedCategories[$group][] = $cat;
     }
 
-    //dump($groupedCategories);
-    // Renderowanie widoku z podziałem na grupy
     return $this->render('tournament/scoreboard.html.twig', [
         'tournament' => $tournament,
         'results' => $groupedResults,
@@ -152,7 +142,6 @@ public function addScore(
     EntityManagerInterface $em
 ): Response {
     $tournament = $tournamentRepository->find($id);
-
     if (!$tournament) {
         throw $this->createNotFoundException('Nie znaleziono turnieju');
     }
@@ -232,7 +221,6 @@ public function addScore(
             ];
         }
     }
-
     return $this->render('tournament/addscore.html.twig', [
         'id' => $id,
         'categories' => $categories,
@@ -242,60 +230,47 @@ public function addScore(
 }
 
 
-#[Route('/tournament/admin/markScore/{id}', name: 'app_tournament_mark_score', methods: ['GET','POST'])]
-public function markScore(
-    Request $request,
-    int $id,
-    TournamentRepository $tournamentRepository,
-    AttemptRepository $attemptRepository,
-    EntityManagerInterface $em
-): Response
+#[Route('/tournament/admin/markScore/{id}', name: 'app_tournament_mark_score')]
+public function markScore( Request $request, int $id, TournamentRepository $tournamentRepository, CompetitorRepository $competitorRepository): Response
 {
-    $attempts   = $tournamentRepository->getEmptyAttempts($id); // zwraca listę Attempt z polem 'id'
-    $categories = $tournamentRepository->getCategories($id);
-    $tournament = $tournamentRepository->find($id);
-
-    if ($request->isMethod('POST')) {
-        $attemptId = $request->request->get('attempt_id');
-        $scores = $request->request->all('scores');
-
-        if (!$attemptId || empty($scores)) {
-            $this->addFlash('error', 'Wszystkie pola muszą być wypełnione.');
-            return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
-        }
-
-        // walidacja wyników: liczby całkowite 0–100
-        foreach ($scores as $scoreValue) {
-            if (!is_numeric($scoreValue) || (int)$scoreValue < 0 || (int)$scoreValue > 100) {
-                $this->addFlash('error', 'Wyniki muszą być liczbami całkowitymi od 0 do 100.');
-                return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
-            }
-        }
-
-        $attempt = $attemptRepository->find($attemptId);
-        if (!$attempt) {
-            $this->addFlash('error', 'Nie znaleziono wybranej próby.');
-            return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
-        }
-
-        foreach ($scores as $scoreValue) {
-            $attemptScore = new \App\Entity\AttemptScore();
-            $attemptScore->setScore((int)$scoreValue);
-            $attemptScore->setAttempt($attempt);
-            $em->persist($attemptScore);
-        }
-
-        $em->flush();
-        $this->addFlash('success', 'Wyniki zapisane pomyślnie.');
-        return $this->redirectToRoute('app_tournament_mark_score', ['id' => $id]);
-    }
-
-    return $this->render('tournament/markscore.html.twig', [
-        'tournament' => $tournament,
+        $tournament = $tournamentRepository->find($id);
+        $attempts   = $tournamentRepository->getEmptyAttempts($id);
+        $competitors = $competitorRepository->findAll();
+    return $this->render('tournament/markscore.html.twig',[
+        'id' => $id,
+        'competitors' => $competitors,
         'attempts' => $attempts,
-        'categories' => $categories
     ]);
 }
 
+#[Route('/admin/submit-score', name: 'submit_score', methods: ['POST'])]
+public function submitScore(Request $request, EntityManagerInterface $em): JsonResponse
+
+{
+    $data = json_decode($request->getContent(), true);
+
+    $attemptId = $data['attemptId'];
+    $score1 = $data['score1'];
+    $score2 = $data['score2'];
+    $score3 = $data['score3'];
+
+    $attempt = $em->getRepository(Attempt::class)->find($attemptId);
+    if (!$attempt) {
+        return new JsonResponse(['success' => false, 'message' => 'Attempt not found']);
+    }
+ $scores = [$score1, $score2, $score3];
+    foreach ($scores as $scoreValue) {
+        if ($scoreValue !== null && $scoreValue !== '') {
+            $attemptScore = new AttemptScore();
+            $attemptScore->setAttempt($attempt);
+            $attemptScore->setScore((int)$scoreValue);
+            $em->persist($attemptScore);
+        }
+    }
+
+    $em->flush();
+
+    return new JsonResponse(['success' => true]);
+}
 
 }

@@ -1,104 +1,145 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}Zapisz wynik tarczy{% endblock %}
-
 {% block body %}
 
 <h2>Zapisz wynik tarczy</h2>
 
-<form id="score-form" action="{{ path('app_tournament_mark_score', {id: tournament.id}) }}" method="post">
-    <label for="category-select">Wybierz kategorię:</label>
-    <select id="category-select" name="category_id" required>
-        <option value="">-- Wybierz kategorię --</option>
-        {% for category in categories %}
-            <option value="{{ category.id }}" data-attempt-limit="{{ category.attempt_limit }}">
-                {{ category.name }}
-            </option>
+<h3> {{id}} </h3>
+
+{% for competitor in competitors %}
+<h3> {{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }} </h3>
+{% endfor %}
+
+<div style="margin-top: 20px; position: relative; width: 500px;">
+    <input type="text" id="competitorInput" placeholder="Zawodnik" style="width: 100%; padding: 8px; box-sizing: border-box;">
+    <ul id="competitorList" style="list-style: none; padding: 0; margin: 0; border: 1px solid #ccc; position: absolute; width: 100%; max-height: 150px; overflow-y: auto; background: #fff; display: none; z-index: 1000;">
+        {% for competitor in competitors %}
+            <li data-id="{{ competitor.id }}" data-name="{{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}" style="padding: 8px; cursor: pointer;">
+                {{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}
+            </li>
         {% endfor %}
-    </select>
+    </ul>
+</div>
 
-    <div id="attempt-container" style="display:none; margin-top:10px;">
-        <label for="attempt-select">Wybierz próbę:</label>
-        <select id="attempt-select" name="attempt_id" required>
-            <!-- dynamicznie wypełniane -->
-        </select>
-    </div>
-
-    <div id="scores-container" style="display:none; margin-top:10px;">
-        <!-- dynamicznie generowane pola dla scores[] -->
-    </div>
-
-    <div id="submit-container" style="display:none; margin-top:10px;">
-        <button type="submit">Dodaj wynik</button>
-    </div>
-</form>
-
-<a href="{{ path('app_tournament_index') }}" class="button">Powrót</a>
-
+<div id="attemptsContainer" style="margin-top: 20px;"></div>
 <script>
-    const attempts = {{ attempts|json_encode|raw }};
-    const categorySelect = document.getElementById('category-select');
-    const attemptContainer = document.getElementById('attempt-container');
-    const attemptSelect = document.getElementById('attempt-select');
-    const scoresContainer = document.getElementById('scores-container');
-    const submitContainer = document.getElementById('submit-container');
+input = document.getElementById('competitorInput');
+list = document.getElementById('competitorList');
+attemptsContainer = document.getElementById('attemptsContainer');
 
-    function generateScores(limit) {
-        scoresContainer.innerHTML = '';
-        for (let i = 1; i <= 3; i++) {
-            const label = document.createElement('label');
-            label.setAttribute('for', `score_${i}`);
-            label.textContent = `Wynik ${i}:`;
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.name = 'scores[]';
-            input.id = `score_${i}`;
-            input.required = true;
-            scoresContainer.appendChild(label);
-            scoresContainer.appendChild(input);
-            scoresContainer.appendChild(document.createElement('br'));
+input.addEventListener('focus', () => list.style.display = 'block');
+
+input.addEventListener('input', () => {
+    const filter = input.value.toLowerCase();
+    let hasVisible = false;
+    list.querySelectorAll('li').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(filter)) {
+            item.style.display = 'block';
+            hasVisible = true;
+        } else {
+            item.style.display = 'none';
         }
-        scoresContainer.style.display = 'block';
-        submitContainer.style.display = 'block';
+    });
+    list.style.display = hasVisible ? 'block' : 'none';
+});
+
+list.addEventListener('click', e => {
+    if(e.target.tagName === 'LI') {
+        const name = e.target.dataset.name;
+        const id = e.target.dataset.id;
+
+        input.value = name;
+        list.style.display = 'none';
+
+        fetchAttempts(id);
+    }
+});
+
+document.addEventListener('click', e => {
+    if(!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
+});
+
+function fetchAttempts(competitorId) {
+    const allAttempts = {{ attempts|json_encode|raw }};
+    const competitorAttempts = allAttempts.filter(a => a.competitor_id == competitorId);
+
+    if(competitorAttempts.length === 0) {
+        attemptsContainer.innerHTML = '<p>Brak wykupionych tarcz</p>';
+        return;
     }
 
-    categorySelect.addEventListener('change', function() {
-        const categoryId = parseInt(this.value);
-        scoresContainer.innerHTML = '';
-        submitContainer.style.display = 'none';
+    let html = `<table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Attempt</th>
+                <th>Kategoria</th>
+                <th>Strzał 1</th>
+                <th>Strzał 2</th>
+                <th>Strzał 3</th>
+                <th>Zapisz</th>
+            </tr>
+        </thead>
+        <tbody>`;
 
-        if (!categoryId) {
-            attemptContainer.style.display = 'none';
-            return;
-        }
+    competitorAttempts.forEach(attempt => {
+        html += `
+            <tr>
+                <td>${attempt.competitor_name}</td>
+                <td>${attempt.category_name}</td>
+                <td><input type="number" name="score1_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
+                <td><input type="number" name="score2_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
+                <td><input type="number" name="score3_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
+                <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, this)">Submit</button></td>
+            </tr>
+        `;
+    });
 
-        // filtrujemy attempts dla wybranej kategorii
-        const filteredAttempts = attempts.filter(a => parseInt(a.category_id) === categoryId);
-        attemptSelect.innerHTML = '';
+    html += '</tbody></table>';
+    attemptsContainer.innerHTML = html;
 
-        if (filteredAttempts.length === 0) {
-            attemptContainer.style.display = 'none';
-            scoresContainer.innerHTML = '<p>Brak dostępnych prób dla tej kategorii.</p>';
-            scoresContainer.style.display = 'block';
-            return;
-        }
-
-        filteredAttempts.forEach(a => {
-            const option = document.createElement('option');
-            option.value = a.id; // <- id konkretnego Attempt
-            option.textContent = a.competitor_name;
-            attemptSelect.appendChild(option);
+    attemptsContainer.querySelectorAll('.scoreInput').forEach(input => {
+        input.addEventListener('input', () => {
+            let val = parseInt(input.value, 10);
+            if(isNaN(val) || val < 0 || val > 100) input.value = 0;
         });
-
-        attemptContainer.style.display = 'block';
-        generateScores(parseInt(this.selectedOptions[0].dataset.attemptLimit));
     });
+}
 
-    attemptSelect.addEventListener('change', function() {
-        const categoryOption = categorySelect.selectedOptions[0];
-        const limit = parseInt(categoryOption.dataset.attemptLimit);
-        generateScores(limit);
-    });
+function submitScore(attemptId, categoryId, btn) {
+    const row = btn.closest('tr');
+    const score1 = row.querySelector(`input[name="score1_${attemptId}"]`).value;
+    const score2 = row.querySelector(`input[name="score2_${attemptId}"]`).value;
+    const score3 = row.querySelector(`input[name="score3_${attemptId}"]`).value;
+
+    fetch('/admin/submit-score', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': '{{ csrf_token("submit_score") }}'
+        },
+        body: JSON.stringify({
+            attemptId: attemptId,
+            categoryId: categoryId,
+            score1: score1,
+            score2: score2,
+            score3: score3
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            alert('Score submitted!');
+            row.remove();
+        } else {
+            alert('Błąd przy zapisie: ' + data.message);
+        }
+    })
+    .catch(error => console.error(error));
+}
+
 </script>
+
+<a href="{{ path('scoreboard', {'id': id}) }}">Powrót</a>
 
 {% endblock %}

@@ -17,16 +17,44 @@ class TournamentRepository extends ServiceEntityRepository
     }
 
     public function getCategories(int $tournamentId): array{
-        return $this->createQueryBuilder('tournament')
-            ->select('category.id, category.name, category.attempt_limit, category_group.description , category_group.id AS group_id, category.initial_fee, category.additional_fee')
-            ->leftjoin('tournament.categories', 'category')
-            ->join('category.category_group', 'category_group')
-            ->where('tournament.id = :tournamentId')
-            ->setParameter('tournamentId', $tournamentId)  
-            ->groupBy('category.id, category_group.id')
-            ->orderBy('category_group.id')
-            ->getQuery()
-            ->getResult();
+    $conn = $this->getEntityManager()->getConnection();
+
+    $sql = "
+        WITH attempt_scores AS (
+            SELECT 
+                a.id AS attempt_id,
+                a.category_id,
+                SUM(s.score) AS total_score
+            FROM attempt a
+            JOIN attempt_score s 
+                ON s.attempt_id = a.id
+            GROUP BY a.id, a.category_id
+        ),
+        ranked_scores AS (
+            SELECT 
+                category_id,
+                total_score,
+                DENSE_RANK() OVER (PARTITION BY category_id ORDER BY total_score DESC) AS rnk
+            FROM attempt_scores
+        )
+        SELECT 
+            c.id,
+            c.name,
+            c.attempt_limit,
+            cg.description,
+            c.category_group_id AS group_id,
+            COALESCE(rs.total_score, 1) AS third_best_score,
+        	c.initial_fee,
+        	c.additional_fee
+        FROM category c
+        LEFT JOIN category_group cg 
+            ON c.category_group_id = cg.id
+        LEFT JOIN ranked_scores rs
+            ON rs.category_id = c.id AND rs.rnk = 3
+        ORDER BY c.category_group_id, c.id;
+    ";
+
+    return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);
     }
     public function getAttempts(int $tournamentId): array{
         return $this->createQueryBuilder('tournament')
@@ -103,6 +131,7 @@ public function getEmptyAttempts(int $tournamentId): array
 {
     return $this->createQueryBuilder('tournament')
         ->select('
+            attempt.id AS attempt_id,
             category.id AS category_id,
             category.name AS category_name,
             category.attempt_limit AS category_attempt_limit,
@@ -112,10 +141,11 @@ public function getEmptyAttempts(int $tournamentId): array
         ->leftJoin('tournament.categories', 'category')
         ->join('category.attempts', 'attempt')
         ->join('attempt.competitor', 'competitor')
-        ->leftJoin('attempt.attemptScores', 'score')   // zakładam że relacja nazywa się "scores"
+        ->leftJoin('attempt.attemptScores', 'score')
         ->where('tournament.id = :tournamentId')
         ->andWhere('score.id IS NULL')
         ->setParameter('tournamentId', $tournamentId)
+        ->orderBy('attempt.id')
         ->getQuery()
         ->getResult();
 }

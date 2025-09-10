@@ -7,11 +7,13 @@
 
 <form method="post" action="{{ path('app_tournament_add_score', {'id': id}) }}">
     <!-- Wyszukiwarka zawodnika -->
-    <div>
-        <label for="competitor-search">Zawodnik:</label>
-        <input type="text" id="competitor-search" placeholder="Wpisz id, imię lub nazwisko" oninput="filterCompetitors()">
-        <button type="button" onclick="clearCompetitor()" style="margin-left:5px;">Usuń</button>
-        <ul id="competitor-list" style="border:1px solid #ccc; max-height:150px; overflow-y:auto; padding:0; margin:0; list-style:none;"></ul>
+    <div style="position:relative; display:inline-block; width:300px;">
+        <label for="competitor-search">Zawodnik:</label><br>
+        <input type="text" id="competitor-search" placeholder="Wpisz id, imię lub nazwisko" oninput="filterCompetitors()" style="width:100%;">
+        <button type="button" onclick="clearCompetitor()" style="margin-top:5px;">Usuń</button>
+        <ul id="competitor-list" 
+            style="position:absolute; top:100%; left:0; right:0; border:1px solid #ccc; max-height:200px; overflow-y:auto; padding:0; margin:0; list-style:none; background:white; z-index:9999; display:none;">
+        </ul>
     </div>
 
     <input type="hidden" id="competitor-id" name="competitor">
@@ -65,24 +67,32 @@ const competitorsData = {{ competitors|json_encode|raw }};
 const competitorAttempts = {{ competitorAttempts|json_encode|raw }};
 let quantities = {};
 
-// Szukanie zawodnika
 function filterCompetitors() {
     const input = document.getElementById('competitor-search').value.toLowerCase();
     const list = document.getElementById('competitor-list');
     list.innerHTML = '';
-    if (!input) return;
+    if (!input) {
+        list.style.display = 'none';
+        return;
+    }
 
+    let found = false;
     competitorsData.forEach(c => {
         const fullName = `${c.id}. ${c.first_name} ${c.last_name}`.toLowerCase();
         if (fullName.includes(input)) {
             const li = document.createElement('li');
             li.textContent = `${c.id}. ${c.first_name} ${c.last_name}`;
-            li.style.padding = '2px 5px';
+            li.style.padding = '4px 6px';
             li.style.cursor = 'pointer';
+            li.onmouseover = () => li.style.background = '#eee';
+            li.onmouseout = () => li.style.background = '';
             li.onclick = () => selectCompetitor(c);
             list.appendChild(li);
+            found = true;
         }
     });
+
+    list.style.display = found ? 'block' : 'none';
 }
 
 function selectCompetitor(c) {
@@ -90,7 +100,7 @@ function selectCompetitor(c) {
     document.getElementById('competitor-id').value = c.id;
     document.getElementById('association').value = c.association_name || '';
     updateCompetitorById(c.id);
-    document.getElementById('competitor-list').innerHTML = '';
+    document.getElementById('competitor-list').style.display = 'none';
 }
 
 function clearCompetitor() {
@@ -105,6 +115,7 @@ function clearCompetitor() {
         quantities[input.id.split('-')[1]] = 0;
     });
     document.getElementById('total-cost').textContent = '0';
+    document.getElementById('competitor-list').style.display = 'none';
 }
 
 function updateCompetitorById(selectedId) {
@@ -154,7 +165,6 @@ function updateTotalCost() {
     document.getElementById('total-cost').textContent = total.toFixed(2);
 }
 
-// Domyślnie brak wybranego zawodnika
 clearCompetitor();
 </script>
 {% endblock %}

@@ -288,4 +288,40 @@ public function submitScore(Request $request, EntityManagerInterface $em): JsonR
     return new JsonResponse(['success' => true]);
 }
 
+
+#[Route('/tournament/admin/exchange-attempt/{id}', name: 'app_tournament_exchange_attempt')]
+public function exchangeAttempt( Request $request, int $id, TournamentRepository $tournamentRepository, CompetitorRepository $competitorRepository): Response
+{
+        $exchangeableAttempts = $tournamentRepository->getCompetitorAttemptsWithoutScore($id);
+        $categoriesAttemps = $tournamentRepository->getCompetitorsAttemptCount($id);
+        $competitorsGroupedAttempts = [];
+
+        foreach ($categoriesAttemps as $row) {
+            $competitorId = $row['id'];
+
+            if (!isset($competitorsGroupedAttempts[$competitorId])) {
+                $competitorsGroupedAttempts[$competitorId] = [
+                    'id' => $row['id'],
+                    'first_name' => $row['first_name'],
+                    'last_name' => $row['last_name'],
+                    'categories' => [],
+                ];
+            }
+
+            $competitorsGroupedAttempts[$competitorId]['categories'][] = [
+                'category_id' => $row['category_id'],
+                'category_name' => $row['category_name'],
+                'category_all_attempts' => $row['category_all_attempts'],
+            ];
+        }
+
+            //dump($exchangeableAttempts);
+            //dd($competitorsGroupedAttempts);
+    return $this->render('tournament/exchange.html.twig',[
+        'id' => $id,
+        'competitorsGroupedAttempts' => $competitorsGroupedAttempts,
+        'exchangeableAttempts' => $exchangeableAttempts,
+    ]);
+}
+
 }

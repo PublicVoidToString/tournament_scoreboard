@@ -3,10 +3,35 @@
 {% block title %}Nowy Zawodnik{% endblock %}
 
 {% block body %}
-    <h2>Dodaj Zawodnika</h2>
+<div class="flex-wrapper">
+    <div class="basic-form">
+        <h1>Dodaj Zawodnika</h1>
 
-    {{ include('competitor/_form.html.twig') }}
+        {{ form_start(form) }}
 
-    <a href="{{ path('scoreboard', {'id': tournamentid}) }}">Powrót</a>
+            <div class="form-group">
+                {{ form_label(form.first_name, 'Imię: ', {'label_attr': {'class': 'field-title'}}) }}
+                {{ form_widget(form.first_name, {'attr': {'class': 'input-text-field'}}) }}
+                {{ form_errors(form.first_name) }}
+            </div>
 
+            <div class="form-group">
+                {{ form_label(form.last_name, 'Nazwisko: ', {'label_attr': {'class': 'field-title'}}) }}
+                {{ form_widget(form.last_name, {'attr': {'class': 'input-text-field'}}) }}
+                {{ form_errors(form.last_name) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(form.association, 'Stowarzyszenie: ', {'label_attr': {'class': 'field-title'}}) }}
+                {{ form_widget(form.association, {'attr': {'class': 'expandable-list-label'}}) }}
+                {{ form_errors(form.association) }}
+            </div>
+
+            <button class="confirm-button">Dodaj zawodnika</button>
+            <a href="{{ path('scoreboard', {'id': tournamentid}) }}" class="return-button">Powrót do turnieju</a>
+
+        {{ form_end(form) }}
+
+    </div>
+</div>
 {% endblock %}

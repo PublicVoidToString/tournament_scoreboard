@@ -1,21 +1,33 @@
 {% extends 'base.html.twig' %}
+
+{% block title %}Zapisz Wynik{% endblock %}
+
 {% block body %}
 
-<h2>Zapisz wynik tarczy</h2>
+<div class="flex-wrapper">
+    <div class="basic-form">
 
-<div style="margin-top: 20px; position: relative; width: 500px;">
-    <input type="text" id="competitorInput" placeholder="Zawodnik" style="width: 100%; padding: 8px; box-sizing: border-box;">
-    <ul id="competitorList" style="list-style: none; padding: 0; margin: 0; border: 1px solid #ccc; position: absolute; width: 100%; max-height: 150px; overflow-y: auto; background: #fff; display: none; z-index: 1000;">
-        {% for competitor in competitors %}
-            <li data-id="{{ competitor.id }}" data-name="{{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}" style="padding: 8px; cursor: pointer;">
-                {{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}
-            </li>
-        {% endfor %}
-    </ul>
+        <h1>Zapisz wynik tarczy</h1>
+
+        <div style="margin: 20px auto 0 auto; position: relative; width: 40em;">
+            <input type="text" id="competitorInput" placeholder="Zawodnik" class="expandable-list-label">
+            <ul id="competitorList" class="expandable-list">
+                {% for competitor in competitors %}
+                    <li data-id="{{ competitor.id }}" data-name="{{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}" style="padding: 8px; cursor: pointer;">
+                        {{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div id="attemptsContainer" style="margin-top: 20px;"></div>
+
+        <a href="{{ path('scoreboard', {'id': id}) }}" class="return-button">Powrót</a>
+    </div>
 </div>
 
-<div id="attemptsContainer" style="margin-top: 20px;"></div>
 <script>
+
 input = document.getElementById('competitorInput');
 list = document.getElementById('competitorList');
 attemptsContainer = document.getElementById('attemptsContainer');
@@ -83,7 +95,7 @@ function fetchAttempts(competitorId) {
                 <td><input type="number" name="score1_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
                 <td><input type="number" name="score2_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
                 <td><input type="number" name="score3_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
-                <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, this)">Zapisz</button></td>
+                <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, this)" class="icon-button">Zapisz</button></td>
             </tr>
         `;
     });
@@ -133,7 +145,5 @@ function submitScore(attemptId, categoryId, btn) {
 }
 
 </script>
-
-<a href="{{ path('scoreboard', {'id': id}) }}">Powrót</a>
 
 {% endblock %}

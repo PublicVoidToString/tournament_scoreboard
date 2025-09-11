@@ -16,47 +16,94 @@ class TournamentRepository extends ServiceEntityRepository
         parent::__construct($registry, Tournament::class);
     }
 
-    public function getCategories(int $tournamentId): array{
-    $conn = $this->getEntityManager()->getConnection();
+    public function getCompetitorAttemptsWithoutScore(int $tournamentId): array{
+        $conn = $this->getEntityManager()->getConnection();
 
-    $sql = "
-        WITH attempt_scores AS (
-        SELECT 
-            a.id AS attempt_id,
-            a.category_id,
-            SUM(s.score) AS total_score
-        FROM attempt a
-        JOIN attempt_score s 
-            ON s.attempt_id = a.id
-        GROUP BY a.id, a.category_id
-    ),
-    ranked_scores AS (
-        SELECT 
-            category_id,
-            total_score,
-            ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY total_score DESC) AS rn
-        FROM attempt_scores
-    )
-    SELECT 
-        c.id,
-        c.name,
-        c.attempt_limit,
-        cg.description,
-        c.category_group_id AS group_id,
-        COALESCE(rs.total_score, 1) AS third_best_score,
-        c.initial_fee,
-        c.additional_fee,
-        cg.scores_per_attempt
-    FROM category c
-    LEFT JOIN category_group cg 
-        ON c.category_group_id = cg.id
-    LEFT JOIN ranked_scores rs
-        ON rs.category_id = c.id AND rs.rn = 3
-    ORDER BY c.category_group_id, c.id;
-    ";
-
-    return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);
+        $sql = "
+            SELECT 
+                competitor.id, 
+                competitor.first_name, 
+                competitor.last_name, 
+                attempt.id AS attempt_id,
+	            category.id AS category_id,
+	            category.name AS category_name,
+	            (SELECT COUNT(*) 
+                    FROM attempt AS a
+                    WHERE a.competitor_id = competitor.id
+                    AND a.category_id = category.id
+                ) AS category_all_attempts
+            FROM competitor
+            JOIN attempt ON attempt.competitor_id = competitor.id
+            JOIN category ON attempt.category_id = category.id
+            LEFT JOIN attempt_score ON attempt_score.attempt_id = attempt.id
+            WHERE attempt_score.attempt_id IS NULL;
+        ";
+        return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);
     }
+
+    public function getCompetitorsAttemptCount(int $tournamentId): array{
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+            SELECT 
+                competitor.id,
+                competitor.first_name,
+                competitor.last_name,
+                category.id AS category_id,
+                category.name AS category_name,
+                COUNT(attempt.id) AS category_all_attempts
+            FROM competitor
+            CROSS JOIN category
+            LEFT JOIN attempt 
+                ON attempt.competitor_id = competitor.id
+                    AND attempt.category_id = category.id
+            GROUP BY competitor.id, competitor.first_name, competitor.last_name, category.id, category.name
+            ORDER BY competitor.id, category.id;
+        ";
+        return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);
+    }
+
+    public function getCategories(int $tournamentId): array{
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+            WITH attempt_scores AS (
+                SELECT 
+                    a.id AS attempt_id,
+                    a.category_id,
+                    SUM(s.score) AS total_score
+                FROM attempt a
+                JOIN attempt_score s 
+                ON s.attempt_id = a.id
+                GROUP BY a.id, a.category_id
+            ),
+            ranked_scores AS (
+                SELECT 
+                    category_id,
+                    total_score,
+                    ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY total_score DESC) AS rn
+                FROM attempt_scores
+            )
+            SELECT 
+                c.id,
+                c.name,
+                c.attempt_limit,
+                cg.description,
+                c.category_group_id AS group_id,
+                COALESCE(rs.total_score, 1) AS third_best_score,
+                c.initial_fee,
+                c.additional_fee,
+                cg.scores_per_attempt
+            FROM category c
+            LEFT JOIN category_group cg 
+                ON c.category_group_id = cg.id
+            LEFT JOIN ranked_scores rs
+                ON rs.category_id = c.id AND rs.rn = 3
+            ORDER BY c.category_group_id, c.id;
+            ";
+        return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);
+    }
+
     public function getAttempts(int $tournamentId): array{
         return $this->createQueryBuilder('tournament')
             ->select('

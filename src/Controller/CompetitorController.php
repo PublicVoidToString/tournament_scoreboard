@@ -23,7 +23,7 @@ final class CompetitorController extends AbstractController
     }
 
     #[Route('/admin/new/{id}', name: 'app_competitor_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, int $id): Response
+    public function new(Request $request, EntityManagerInterface $entityManager, CompetitorRepository $competitorRepository, int $id): Response
     {
         $competitor = new Competitor();
         $form = $this->createForm(CompetitorType::class, $competitor);
@@ -38,8 +38,10 @@ final class CompetitorController extends AbstractController
 
             return $this->redirectToRoute('scoreboard', ['id' => $id], Response::HTTP_SEE_OTHER);
         }
-
+        
+        $competitors = $competitorRepository->findAll();
         return $this->render('competitor/new.html.twig', [
+            'competitors' => $competitors,
             'competitor' => $competitor,
             'form' => $form,
             'tournamentid' => $id

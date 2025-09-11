@@ -198,10 +198,10 @@ public function addScore(
             }
         } else {
                 $this->addFlash('attention', '!!! UWAGA !!!');
-            $this->addFlash('fail', 'Nie wybrano zawodnika lub ilości tarcz.');
+            $this->addFlash('fail', 'Nie wybrano zawodnika.');
         }
 
-        return $this->redirectToRoute('scoreboard', ['id' => $id]);
+        return $this->redirectToRoute('app_tournament_add_score', ['id' => $id]);
     }
 
     // GET – render formularza

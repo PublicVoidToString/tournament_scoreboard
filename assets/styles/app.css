@@ -85,6 +85,11 @@ td.passing-score {
   font-weight: bold;
 }
 
+/* Scoreboard */
+
+/* Menus */
+
+
 .admin-menu {
     position: sticky;
     top: 0;
@@ -92,6 +97,7 @@ td.passing-score {
     width: 100%;
     background: #222;
     z-index: 1000;
+    font-size:1.2em;
 }
 
 .admin-menu__list {
@@ -120,9 +126,41 @@ td.passing-score {
   background: #555;
 }
 
-/* Scoreboard */
+/*Submenu*/
 
-/* Menus */
+.admin-menu__item {
+    position: relative;
+}
+
+.admin-menu__item > .submenu {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to right, #333, #222);
+    position: absolute;
+    z-index: 1001;
+    font-size: 1em;
+}
+
+.admin-menu__item:hover > .submenu {
+    display: flex;
+}
+
+.admin-menu__item > .submenu li a {
+    color: #fff;
+    text-decoration: none;
+    display: block;
+    transition: 0.3s;
+    padding-top: 0.4em;
+    padding-bottom: 0.4em;
+}
+
+.admin-menu__item > .submenu li a:hover {
+    background: #555;
+}
 
 /* Forms */
 .flex-wrapper {
@@ -190,23 +228,6 @@ td.passing-score {
   display: none;
 }
 
-.clear-button {
-  display: inline-block;
-  padding: 5px 15px 5px 15px;
-  font-size: 1.2em;
-  min-width: 50px;
-  margin-top:0.1em;
-  margin-bottom:0.1em;
-  background-color: #600000;
-  color: #fff;
-  transition: background-color 0.2s ease;
-}
-
-.clear-button:hover {
-  background-color: #990000;
-  color: #fff;
-}
-
 .icon-button {
   font-size: 1.1em;
   width: 100%;
@@ -220,6 +241,36 @@ td.passing-score {
 
 
 /* Single Components */
+
+.clear-button, .simple-button {
+    display: inline-block;
+    padding: 5px 15px;
+    font-size: 1.2em;
+    white-space: nowrap; /* zapobiega łamaniu tekstu */
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+    border-radius: 6px;
+    color: #fff;
+    transition: background-color 0.2s ease;
+    flex: 0 0 auto; /* nie kurczy się ani nie rośnie */
+}
+
+.clear-button {
+    background-color: #600000;
+}
+
+.clear-button:hover {
+    background-color: #990000;
+}
+
+.simple-button {
+    background-color: #004000;
+    text-decoration: none;
+}
+
+.simple-button:hover {
+    background-color: #006600;
+}
 
 .confirm-button {
   display: inline-block;
@@ -279,12 +330,14 @@ td.passing-score {
 }
 
 .flash-message-success {
-  background: linear-gradient(to right, #004000, #ffe600);
+  text-align:center;
+  background: linear-gradient(to right, #004000, #008000);
+  top:0;
+  width:100%;
   color: #ffffff;
   font-size:1.5em;
-  padding: 10px;
-  margin-bottom: 20px;
-  border-radius: 4px;
+  margin-bottom: 0.2em;
+  position: fixed;
 }
 
 .flash-message-attention {
@@ -308,3 +361,4 @@ td.passing-score {
   margin-bottom: 20px;
   border-radius: 4px;
 }
+

@@ -11,10 +11,17 @@
             <!-- Wyszukiwarka zawodnika -->
             <div style="position:relative; display:inline-block; width:300px;">
                 <label for="competitor-search" class="field-title">Zawodnik:</label><br>
-                <input type="text" id="competitor-search" placeholder="Wpisz id, imię lub nazwisko" oninput="filterCompetitors()" class="expandable-list-label">
-                <button type="button" onclick="clearCompetitor()" class="clear-button" >Wyczyść wyszukiwanie</button>
+                <input type="text" id="competitor-search" placeholder="Wyszukaj Zawodnika" oninput="filterCompetitors()" class="expandable-list-label" autocomplete="off" spellcheck="false">
                 <ul id="competitor-list" class="expandable-list">
                 </ul>
+               <div style="display: flex; justify-content: center; margin-top: 10px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: nowrap;">
+                        <button type="button" onclick="clearCompetitor()" class="clear-button">Wyczyść wyszukiwanie</button>
+                        <button type="button" onclick="window.location.href='{{ path('app_competitor_new', {'id': id}) }}'" class="simple-button">
+                            Dodaj Nowego Zawodnika
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <input type="hidden" id="competitor-id" name="competitor">

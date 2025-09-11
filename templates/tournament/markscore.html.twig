@@ -27,123 +27,141 @@
 </div>
 
 <script>
-
-input = document.getElementById('competitorInput');
-list = document.getElementById('competitorList');
-attemptsContainer = document.getElementById('attemptsContainer');
-
-input.addEventListener('focus', () => list.style.display = 'block');
-
-input.addEventListener('input', () => {
-    const filter = input.value.toLowerCase();
-    let hasVisible = false;
-    list.querySelectorAll('li').forEach(item => {
-        const text = item.textContent.toLowerCase();
-        if (text.includes(filter)) {
-            item.style.display = 'block';
-            hasVisible = true;
-        } else {
-            item.style.display = 'none';
-        }
-    });
-    list.style.display = hasVisible ? 'block' : 'none';
-});
-
-list.addEventListener('click', e => {
-    if(e.target.tagName === 'LI') {
-        const name = e.target.dataset.name;
-        const id = e.target.dataset.id;
-
-        input.value = name;
-        list.style.display = 'none';
-
-        fetchAttempts(id);
-    }
-});
-
-document.addEventListener('click', e => {
-    if(!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
-});
-
-function fetchAttempts(competitorId) {
+(function(){
     const allAttempts = {{ attempts|json_encode|raw }};
-    const competitorAttempts = allAttempts.filter(a => a.competitor_id == competitorId);
+    const csrfToken = '{{ csrf_token("submit_score") }}';
 
-    if(competitorAttempts.length === 0) {
-        attemptsContainer.innerHTML = '<p>Brak wykupionych tarcz</p>';
-        return;
-    }
+    const input = document.getElementById('competitorInput');
+    const list = document.getElementById('competitorList');
+    const attemptsContainer = document.getElementById('attemptsContainer');
+    if (!input || !list || !attemptsContainer) return;
 
-    let html = `<table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Attempt</th>
-                <th>Kategoria</th>
-                <th>Strzał 1</th>
-                <th>Strzał 2</th>
-                <th>Strzał 3</th>
-                <th>Zapisz</th>
-            </tr>
-        </thead>
-        <tbody>`;
-
-    competitorAttempts.forEach(attempt => {
-        html += `
-            <tr>
-                <td>${attempt.competitor_name}</td>
-                <td>${attempt.category_name}</td>
-                <td><input type="number" name="score1_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
-                <td><input type="number" name="score2_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
-                <td><input type="number" name="score3_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>
-                <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, this)" class="icon-button">Zapisz</button></td>
-            </tr>
-        `;
-    });
-
-    html += '</tbody></table>';
-    attemptsContainer.innerHTML = html;
-
-    attemptsContainer.querySelectorAll('.scoreInput').forEach(input => {
-        input.addEventListener('input', () => {
-            let val = parseInt(input.value, 10);
-            if(isNaN(val) || val < 0 || val > 100) input.value = 0;
-        });
-    });
-}
-
-function submitScore(attemptId, categoryId, btn) {
-    const row = btn.closest('tr');
-    const score1 = row.querySelector(`input[name="score1_${attemptId}"]`).value;
-    const score2 = row.querySelector(`input[name="score2_${attemptId}"]`).value;
-    const score3 = row.querySelector(`input[name="score3_${attemptId}"]`).value;
-
-    fetch('/admin/submit-score', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': '{{ csrf_token("submit_score") }}'
-        },
-        body: JSON.stringify({
-            attemptId: attemptId,
-            categoryId: categoryId,
-            score1: score1,
-            score2: score2,
-            score3: score3
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.success) {
-            alert('Score submitted!');
-            row.remove();
-        } else {
-            alert('Błąd przy zapisie: ' + data.message);
+    // funkcja dostępna globalnie bo używasz inline onclick w generowanym HTML
+    window.submitScore = function(attemptId, categoryId, shotsCount, btn) {
+        const row = btn.closest('tr');
+        let scores = [];
+        for (let i = 1; i <= shotsCount; i++) {
+            const val = row.querySelector(`input[name="score${i}_${attemptId}"]`).value;
+            scores.push(val);
         }
-    })
-    .catch(error => console.error(error));
-}
 
+        fetch('/admin/submit-score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                attemptId: attemptId,
+                categoryId: categoryId,
+                scores: scores
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Score submitted!');
+                row.remove();
+            } else {
+                alert('Błąd przy zapisie: ' + data.message);
+            }
+        })
+        .catch(error => console.error(error));
+    };
+
+    window.fetchAttempts = function(competitorId) {
+        const competitorAttempts = allAttempts.filter(a => a.competitor_id == competitorId);
+
+        if (competitorAttempts.length === 0) {
+            attemptsContainer.innerHTML = '<p>Brak wykupionych tarcz</p>';
+            return;
+        }
+
+        const grouped = {};
+        competitorAttempts.forEach(attempt => {
+            grouped[attempt.scores_per_attempt] = grouped[attempt.scores_per_attempt] || [];
+            grouped[attempt.scores_per_attempt].push(attempt);
+        });
+
+        let html = '';
+        Object.keys(grouped).forEach(shotsCount => {
+            html += `<h3>Tarcze z ${shotsCount} strzałami</h3>`;
+            html += `<table border="1" cellpadding="5" cellspacing="0" style="margin-bottom:20px;">
+                <thead>
+                    <tr>
+                        <th>Zawodnik</th>
+                        <th>Kategoria</th>`;
+            for (let i = 1; i <= shotsCount; i++) {
+                html += `<th>Strzał ${i}</th>`;
+            }
+            html += `<th>Zapisz</th></tr></thead><tbody>`;
+
+            grouped[shotsCount].forEach(attempt => {
+                let inputs = '';
+                for (let i = 1; i <= shotsCount; i++) {
+                    inputs += `<td><input type="number" name="score${i}_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>`;
+                }
+
+                html += `
+                    <tr>
+                        <td>${attempt.competitor_name}</td>
+                        <td>${attempt.category_name}</td>
+                        ${inputs}
+                        <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, ${shotsCount}, this)" class="icon-button">Zapisz</button></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+        });
+
+        attemptsContainer.innerHTML = html;
+
+        attemptsContainer.querySelectorAll('.scoreInput').forEach(inp => {
+            inp.addEventListener('input', () => {
+                let val = parseInt(inp.value, 10);
+                if (isNaN(val) || val < 0 || val > 100) inp.value = 0;
+            });
+        });
+    };
+
+    // eventy UI
+    input.addEventListener('focus', () => list.style.display = 'block');
+
+    input.addEventListener('input', () => {
+        const filter = input.value.toLowerCase();
+        let hasVisible = false;
+        list.querySelectorAll('li').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(filter)) {
+                item.style.display = 'block';
+                hasVisible = true;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        list.style.display = hasVisible ? 'block' : 'none';
+    });
+
+    list.addEventListener('click', e => {
+        if (e.target.tagName === 'LI') {
+            const name = e.target.dataset.name;
+            const id = e.target.dataset.id;
+
+            input.value = name;
+            list.style.display = 'none';
+
+            window.fetchAttempts(id);
+        }
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
+    });
+
+})();
 </script>
+
 
 {% endblock %}

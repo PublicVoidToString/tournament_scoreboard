@@ -67,22 +67,30 @@ class TournamentRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = "
-            WITH attempt_scores AS (
+            WITH attempt_totals AS (
                 SELECT 
-                    a.id AS attempt_id,
+                    a.id           AS attempt_id,
+                    a.competitor_id,
                     a.category_id,
-                    SUM(s.score) AS total_score
+                    SUM(s.score)   AS total_score
                 FROM attempt a
-                JOIN attempt_score s 
-                ON s.attempt_id = a.id
-                GROUP BY a.id, a.category_id
+                JOIN attempt_score s ON s.attempt_id = a.id
+                GROUP BY a.id, a.competitor_id, a.category_id
+            ),
+            competitor_best AS (
+                SELECT
+                    competitor_id,
+                    category_id,
+                    MAX(total_score) AS best_score
+                FROM attempt_totals
+                GROUP BY competitor_id, category_id
             ),
             ranked_scores AS (
-                SELECT 
+                SELECT
                     category_id,
-                    total_score,
-                    ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY total_score DESC) AS rn
-                FROM attempt_scores
+                    best_score,
+                    ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY best_score DESC) AS rn
+                FROM competitor_best
             )
             SELECT 
                 c.id,
@@ -90,15 +98,13 @@ class TournamentRepository extends ServiceEntityRepository
                 c.attempt_limit,
                 cg.description,
                 c.category_group_id AS group_id,
-                COALESCE(rs.total_score, 1) AS third_best_score,
+                COALESCE(rs.best_score, 1) AS third_best_score,
                 c.initial_fee,
                 c.additional_fee,
                 cg.scores_per_attempt
             FROM category c
-            LEFT JOIN category_group cg 
-                ON c.category_group_id = cg.id
-            LEFT JOIN ranked_scores rs
-                ON rs.category_id = c.id AND rs.rn = 3
+            LEFT JOIN category_group cg ON c.category_group_id = cg.id
+            LEFT JOIN ranked_scores rs ON rs.category_id = c.id AND rs.rn = 3
             ORDER BY c.category_group_id, c.id;
             ";
         return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);
@@ -184,10 +190,12 @@ public function getEmptyAttempts(int $tournamentId): array
             category.name AS category_name,
             category.attempt_limit AS category_attempt_limit,
             competitor.id AS competitor_id,
-            CONCAT(competitor.first_name, \' \', competitor.last_name) AS competitor_name
+            CONCAT(competitor.first_name, \' \', competitor.last_name) AS competitor_name,
+            category_group.scores_per_attempt AS scores_per_attempt
         ')
         ->leftJoin('tournament.categories', 'category')
         ->join('category.attempts', 'attempt')
+        ->join('category.category_group', 'category_group')
         ->join('attempt.competitor', 'competitor')
         ->leftJoin('attempt.attemptScores', 'score')
         ->where('tournament.id = :tournamentId')

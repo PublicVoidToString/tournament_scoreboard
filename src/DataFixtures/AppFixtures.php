@@ -73,7 +73,7 @@ class AppFixtures extends Fixture
         $manager->persist($kbks);
 
         $kbkspiatka = new CategoryGroup();
-        $kbkspiatka->setDescription("Karabinek sportowy KBKS - 50 metrów");
+        $kbkspiatka->setDescription("Karabinek sportowy KBKS - 50 metrów - 5 strzałów");
         $kbkspiatka->setScoresPerAttempt(5);
         $manager->persist($kbkspiatka);
 

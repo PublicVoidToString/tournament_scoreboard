@@ -248,9 +248,11 @@ public function addScore(
 #[Route('/tournament/admin/markScore/{id}', name: 'app_tournament_mark_score')]
 public function markScore( Request $request, int $id, TournamentRepository $tournamentRepository, CompetitorRepository $competitorRepository): Response
 {
-        $tournament = $tournamentRepository->find($id);
         $attempts   = $tournamentRepository->getEmptyAttempts($id);
         $competitors = $competitorRepository->findAll();
+        
+        //dump($attempts);
+        //dd($competitors);
     return $this->render('tournament/markscore.html.twig',[
         'id' => $id,
         'competitors' => $competitors,
@@ -260,20 +262,17 @@ public function markScore( Request $request, int $id, TournamentRepository $tour
 
 #[Route('/admin/submit-score', name: 'submit_score', methods: ['POST'])]
 public function submitScore(Request $request, EntityManagerInterface $em): JsonResponse
-
 {
     $data = json_decode($request->getContent(), true);
 
     $attemptId = $data['attemptId'];
-    $score1 = $data['score1'];
-    $score2 = $data['score2'];
-    $score3 = $data['score3'];
+    $scores = $data['scores'] ?? [];
 
     $attempt = $em->getRepository(Attempt::class)->find($attemptId);
     if (!$attempt) {
         return new JsonResponse(['success' => false, 'message' => 'Attempt not found']);
     }
- $scores = [$score1, $score2, $score3];
+
     foreach ($scores as $scoreValue) {
         if ($scoreValue !== null && $scoreValue !== '') {
             $attemptScore = new AttemptScore();
@@ -287,6 +286,7 @@ public function submitScore(Request $request, EntityManagerInterface $em): JsonR
 
     return new JsonResponse(['success' => true]);
 }
+
 
 
 #[Route('/tournament/admin/exchange-attempt/{id}', name: 'app_tournament_exchange_attempt')]

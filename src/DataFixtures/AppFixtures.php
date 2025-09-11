@@ -83,7 +83,7 @@ class AppFixtures extends Fixture
         $manager->persist($luk);
 
         $kur = new CategoryGroup();
-        $kur->setDescription("Strzelanie do kura");
+        $kur->setDescription("Strzelanie do Kura");
         $kur->setScoresPerAttempt(1);
         $manager->persist($kur);
 

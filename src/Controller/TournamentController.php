@@ -83,6 +83,7 @@ final class TournamentController extends AbstractController
             $group = explode(' ', $cat['group_id'])[0];
             $groupedCategories[$group][] = $cat;
         }
+        
         return $this->render('tournament/scoreboard.html.twig', [
             'tournament' => $tournament,
             'results' => $groupedResults,
@@ -168,6 +169,7 @@ public function addScore(
 
         if ($competitorId && $quantities) {
             $competitor = $competitorRepository->find($competitorId);
+            $addedAttempts = 0;
 
             foreach ($quantities as $categoryId => $qty) {
                 $qty = (int)$qty;
@@ -181,12 +183,22 @@ public function addScore(
                         $attempt = new Attempt();
                         $attempt->setCompetitor($competitor);
                         $attempt->setCategory($category);
-
                         $em->persist($attempt);
+                        $addedAttempts++;
                     }
                 }
             }
-            $em->flush();
+
+            if ($addedAttempts > 0) {
+                $em->flush();
+                $this->addFlash('success', 'Pomyślnie dodano ' . $addedAttempts . ' nowe tarcze dla zawodnika: ' . $competitor->getFirstName() . ' ' . $competitor->getLastName());
+            } else {
+                $this->addFlash('attention', '!!! UWAGA !!!');
+                $this->addFlash('fail', 'Nie dodano żadnych tarcz. Wybierz ilość większą od 0.');
+            }
+        } else {
+                $this->addFlash('attention', '!!! UWAGA !!!');
+            $this->addFlash('fail', 'Nie wybrano zawodnika lub ilości tarcz.');
         }
 
         return $this->redirectToRoute('scoreboard', ['id' => $id]);

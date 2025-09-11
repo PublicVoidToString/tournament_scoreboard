@@ -33,6 +33,9 @@ final class CompetitorController extends AbstractController
             $entityManager->persist($competitor);
             $entityManager->flush();
 
+            $this->addFlash('success', 'Pomyślnie dodano nowego zawodnika: ' . $competitor->getFirstName() . ' ' . $competitor->getLastName());
+            $this->addFlash('info', 'Numer Zawodnika: ' . $competitor->getId());
+
             return $this->redirectToRoute('scoreboard', ['id' => $id], Response::HTTP_SEE_OTHER);
         }
 

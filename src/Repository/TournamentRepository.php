@@ -133,7 +133,7 @@ class TournamentRepository extends ServiceEntityRepository
         $categoryIds = array_map(fn($c) => $c['id'], $categories);
 
         return $this->createQueryBuilder('tournament')
-            ->select('CONCAT(competitor.first_name, \' \',  competitor.last_name) AS competitor_name , category.id AS category_id, SUM(attemptScore.score) AS score')
+            ->select('CONCAT(competitor.id, \'. \', competitor.first_name, \' \',  competitor.last_name) AS competitor_name , category.id AS category_id, SUM(attemptScore.score) AS score')
             ->join('tournament.categories', 'category')
             ->join('category.attempts', 'attempt')
             ->join('attempt.competitor', 'competitor')

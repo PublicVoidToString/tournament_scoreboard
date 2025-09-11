@@ -60,8 +60,7 @@
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                alert('Score submitted!');
+            if (!data.success) {
                 row.remove();
             } else {
                 alert('Błąd przy zapisie: ' + data.message);

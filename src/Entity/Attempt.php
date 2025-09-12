@@ -15,9 +15,6 @@ class Attempt
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column]
-    private ?int $attempt_number = null;
-
     #[ORM\ManyToOne(inversedBy: 'attempts')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Competitor $competitor = null;
@@ -40,18 +37,6 @@ class Attempt
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getAttemptNumber(): ?int
-    {
-        return $this->attempt_number;
-    }
-
-    public function setAttemptNumber(int $attempt_number): static
-    {
-        $this->attempt_number = $attempt_number;
-
-        return $this;
     }
 
     public function getCompetitor(): ?Competitor

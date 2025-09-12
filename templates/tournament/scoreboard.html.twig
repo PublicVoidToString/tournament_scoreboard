@@ -5,23 +5,32 @@
 {% block body %}
 
 
-    {% if is_granted('ROLE_ADMIN') %}
-        <nav class="admin-menu">
-            <ul class="admin-menu__list">
-                <li class="admin-menu__item"><a href={{ path('app_competitor_new', {'id': tournament.id}) }} class="admin-menu__link">Dodaj Zawodnika</a></li>
-                <li class="admin-menu__item"><a href={{ path('app_tournament_add_score', {'id': tournament.id}) }} class="admin-menu__link">Sprzedaj Tarczę</a></li>
-                <li class="admin-menu__item"><a href={{ path('app_tournament_mark_score', {'id': tournament.id}) }} class="admin-menu__link">Zapisz wynik tarczy</a></li>
-                <li class="admin-menu__item"><a href={{ path('app_tournament_mark_score', {'id': tournament.id}) }} class="admin-menu__link">Wymień tarczę</a></li>
-                <li class="admin-menu__item"><a href="#" class="admin-menu__link">Zaawansowane ustawienia turnieju</a></li>
-                <li class="admin-menu__item admin-menu__logout">
-                    <a href="{{ path('app_logout') }}" class="admin-menu__link">Wyloguj</a>
-                </li>
-            </ul>
-        </nav>
-    {% endif %}
+{% if is_granted('ROLE_ADMIN') %}
+    <nav class="admin-menu">
+        <ul class="admin-menu__list">
+            <li class="admin-menu__item"><a href={{ path('app_competitor_new', {'id': tournament.id}) }} class="admin-menu__link">Dodaj Zawodnika</a></li>
+            <li class="admin-menu__item"><a href={{ path('app_tournament_add_score', {'id': tournament.id}) }} class="admin-menu__link">Sprzedaj Tarczę</a></li>
+            <li class="admin-menu__item"><a href={{ path('app_tournament_mark_score', {'id': tournament.id}) }} class="admin-menu__link">Zapisz wynik tarczy</a></li>
+            <li class="admin-menu__item">
+                <a href="#" class="admin-menu__link" onclick="event.preventDefault(); this.nextElementSibling.classList.toggle('hidden');">
+                        Dodatkowe opcje
+                </a>
+                <ul class="submenu hidden">
+                    <li><a href={{ path('app_tournament_exchange_attempt', {'id': tournament.id}) }}>Wymień tarczę</a></li>
+                    <li><a href="#">Popraw wynik</a></li>
+                    <li><a href="#">Edytuj zawodnika</a></li>
+                    <li><a href="#">Ustawienia konkurencji</a></li>
+                    <li class="admin-menu__item admin-menu__logout">
+                        <a href="{{ path('app_logout') }}">Wyloguj</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+{% endif %}
 
 
-<h2>{{ tournament.name }}</h2>
+<h1>{{ tournament.name }}</h1>
 
 {% for group, categories in groupedCategories %}
     <h3>{{ categories[0]['description'] }}</h3>
@@ -55,5 +64,5 @@
     <br>
 {% endfor %}
 
-<a href="{{ path('app_tournament_index') }}" class="button">Powrót</a>
+<a href="{{ path('app_tournament_index') }}" class="return-button">Powrót do listy turniejów</a>
 {% endblock %}

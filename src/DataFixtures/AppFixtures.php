@@ -72,13 +72,18 @@ class AppFixtures extends Fixture
         $kbks->setScoresPerAttempt(3);
         $manager->persist($kbks);
 
+        $kbkspiatka = new CategoryGroup();
+        $kbkspiatka->setDescription("Karabinek sportowy KBKS - 50 metrów - 5 strzałów");
+        $kbkspiatka->setScoresPerAttempt(5);
+        $manager->persist($kbkspiatka);
+
         $luk = new CategoryGroup();
         $luk->setDescription("Łuk klasyczny - 20 metrów");
         $luk->setScoresPerAttempt(3);
         $manager->persist($luk);
 
         $kur = new CategoryGroup();
-        $kur->setDescription("Strzelanie do kura");
+        $kur->setDescription("Strzelanie do Kura");
         $kur->setScoresPerAttempt(1);
         $manager->persist($kur);
 
@@ -111,8 +116,8 @@ class AppFixtures extends Fixture
 
         $tarcza = new Category();
         $tarcza->setName("Strzelanie o Tytuł Mistrza Okręgu Pomorskiego");
-        $tarcza->setInitialFee(30);
-        $tarcza->setAdditionalFee(20);
+        $tarcza->setInitialFee(50);
+        $tarcza->setAdditionalFee(0);
         $tarcza->setAttemptLimit(1);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($kbks);
@@ -156,8 +161,8 @@ class AppFixtures extends Fixture
 
         $tarcza = new Category();
         $tarcza->setName("Tarcza Młodzieżowa ( do lat 16 )");
-        $tarcza->setInitialFee(30);
-        $tarcza->setAdditionalFee(20);
+        $tarcza->setInitialFee(10);
+        $tarcza->setAdditionalFee(5);
         $tarcza->setAttemptLimit(0);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($pneumatyk);

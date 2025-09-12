@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Wymień Tarczę{% endblock %}
+
+{% block body %}
+<div class="flex-wrapper">
+    <div class="basic-form">
+        <h1>Wymień tarczę</h1>
+
+        <a href="{{ path('scoreboard', {'id': id}) }}" class="return-button">Powrót do turnieju</a>
+    </div>
+</div>
+{% endblock %}

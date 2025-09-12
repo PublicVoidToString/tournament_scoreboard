@@ -1,11 +1,84 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}New Competitor{% endblock %}
+{% block title %}Nowy Zawodnik{% endblock %}
 
 {% block body %}
-    <h1>Create new Competitor</h1>
+<div class="flex-wrapper">
+    <div class="basic-form">
+        <h1>Dodaj Zawodnika</h1>
 
-    {{ include('competitor/_form.html.twig') }}
+        {{ form_start(form) }}
 
-    <a href="{{ path('app_competitor_index') }}">back to list</a>
+            <div class="form-group">
+                {{ form_label(form.first_name, 'Imię: ', {'label_attr': {'class': 'field-title'}}) }}
+                {{ form_widget(form.first_name, {'attr': {'class': 'input-text-field'}}) }}
+                {{ form_errors(form.first_name) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(form.last_name, 'Nazwisko: ', {'label_attr': {'class': 'field-title'}}) }}
+                {{ form_widget(form.last_name, {'attr': {'class': 'input-text-field'}}) }}
+                {{ form_errors(form.last_name) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(form.association, 'Stowarzyszenie: ', {'label_attr': {'class': 'field-title'}}) }}
+                {{ form_widget(form.association, {'attr': {'class': 'expandable-list-label'}}) }}
+                {{ form_errors(form.association) }}
+            </div>
+
+            <button class="confirm-button">Dodaj zawodnika</button>
+            <a href="#" class="return-button" onclick="event.preventDefault(); if (window.history.length > 1) { history.back(); } else { window.location = '{{ path('scoreboard', {'id': tournamentid}) }}'; }">Powrót</a>
+
+        {{ form_end(form) }}
+
+    </div>
+</div>
+
+<div class="flex-wrapper">
+    <div class="basic-form">
+        <p id="compare" style="display:none;"></p>
+        <h1>Istniejący Zawodnicy</h1>
+        <ul id="competitor-list" class="expandable-list" style="position: static; display: block; max-height: none; border: none; border-radius: 0;">
+            {% for competitor in competitors %}
+                {% set competitor_string = competitor.first_name ~ ' ' ~ competitor.last_name ~ ' (' ~ competitor.association_name ~ ')' %}
+                <li data-value="{{ competitor_string }}">{{ competitor_string }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+{% set firstId = form.first_name.vars.id %}
+{% set lastId = form.last_name.vars.id %}
+
+<script>
+    const firstNameInput = document.getElementById('{{ firstId }}');
+    const lastNameInput = document.getElementById('{{ lastId }}');
+    const compareOutput = document.getElementById('compare');
+    const competitorList = document.getElementById('competitor-list');
+    const competitorItems = Array.from(competitorList.querySelectorAll('li'));
+
+    function updateCompare() {
+        const firstName = firstNameInput.value.trim();
+        const lastName = lastNameInput.value.trim();
+        const compareText = firstName + (firstName && lastName ? ' ' : '') + lastName;
+        compareOutput.textContent = compareText;
+
+        // Filtracja listy
+        competitorItems.forEach(item => {
+            const text = item.dataset.value.toLowerCase();
+            if (text.includes(compareText.toLowerCase())) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    firstNameInput.addEventListener('input', updateCompare);
+    lastNameInput.addEventListener('input', updateCompare);
+
+    updateCompare();
+</script>
+
 {% endblock %}

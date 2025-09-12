@@ -19,7 +19,7 @@
                 <td>{{ tournament.name }}</td>
                 <td>{{ tournament.date ? tournament.date|date('Y-m-d H:i:s') : '' }}</td>
                 <td>
-                    <a href="{{ path('app_tournament_show', {'id': tournament.id}) }}" class="button">Pokaż</a>
+                    <a href="{{ path('scoreboard', {'id': tournament.id}) }}" class="button">Pokaż</a>
                     <a href="{{ path('app_tournament_edit', {'id': tournament.id}) }}" class="button">Edytuj</a>
                 </td>
             </tr>

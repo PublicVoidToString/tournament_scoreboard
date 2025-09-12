@@ -72,16 +72,26 @@ class AppFixtures extends Fixture
         $kbks->setScoresPerAttempt(3);
         $manager->persist($kbks);
 
+        $kbkspiatka = new CategoryGroup();
+        $kbkspiatka->setDescription("Karabinek sportowy KBKS - 50 metrów - 5 strzałów");
+        $kbkspiatka->setScoresPerAttempt(5);
+        $manager->persist($kbkspiatka);
+
         $luk = new CategoryGroup();
         $luk->setDescription("Łuk klasyczny - 20 metrów");
         $luk->setScoresPerAttempt(3);
         $manager->persist($luk);
 
+        $kur = new CategoryGroup();
+        $kur->setDescription("Strzelanie do Kura");
+        $kur->setScoresPerAttempt(1);
+        $manager->persist($kur);
+
         $tarczaSponsora = new Category();
         $tarczaSponsora->setName("Tarcza Charytatywna");
         $tarczaSponsora->setInitialFee(30);
         $tarczaSponsora->setAdditionalFee(20);
-        $tarczaSponsora->setAttemptLimit(5);
+        $tarczaSponsora->setAttemptLimit(0);
         $tarczaSponsora->setTournament($zawody);
         $tarczaSponsora->setCategoryGroup($luk);
         $manager->persist($tarczaSponsora);
@@ -90,7 +100,7 @@ class AppFixtures extends Fixture
         $tarcza->setName("Puchar Wójta Gminy");
         $tarcza->setInitialFee(30);
         $tarcza->setAdditionalFee(20);
-        $tarcza->setAttemptLimit(5);
+        $tarcza->setAttemptLimit(0);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($kbks);
         $manager->persist($tarcza);
@@ -99,16 +109,16 @@ class AppFixtures extends Fixture
         $tarcza->setName("Tarcza Mistrza Okręgu");
         $tarcza->setInitialFee(30);
         $tarcza->setAdditionalFee(20);
-        $tarcza->setAttemptLimit(5);
+        $tarcza->setAttemptLimit(0);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($kbks);
         $manager->persist($tarcza);
 
         $tarcza = new Category();
         $tarcza->setName("Strzelanie o Tytuł Mistrza Okręgu Pomorskiego");
-        $tarcza->setInitialFee(30);
-        $tarcza->setAdditionalFee(20);
-        $tarcza->setAttemptLimit(5);
+        $tarcza->setInitialFee(50);
+        $tarcza->setAdditionalFee(0);
+        $tarcza->setAttemptLimit(1);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($kbks);
         $manager->persist($tarcza);
@@ -117,7 +127,7 @@ class AppFixtures extends Fixture
         $tarczaBracka->setName("Tarcza Skarbnika");
         $tarczaBracka->setInitialFee(30);
         $tarczaBracka->setAdditionalFee(20);
-        $tarczaBracka->setAttemptLimit(5);
+        $tarczaBracka->setAttemptLimit(0);
         $tarczaBracka->setTournament($zawody);
         $tarczaBracka->setCategoryGroup($kbks);
         $manager->persist($tarczaBracka);
@@ -126,7 +136,7 @@ class AppFixtures extends Fixture
         $tarczaGosci->setName("Tarcza Posła na Sejm RP 1");
         $tarczaGosci->setInitialFee(30);
         $tarczaGosci->setAdditionalFee(20);
-        $tarczaGosci->setAttemptLimit(5);
+        $tarczaGosci->setAttemptLimit(0);
         $tarczaGosci->setTournament($zawody);
         $tarczaGosci->setCategoryGroup($pneumatyk);
         $manager->persist($tarczaGosci);
@@ -135,7 +145,7 @@ class AppFixtures extends Fixture
         $tarcza->setName("Tarcza Posła na Sejm RP 2");
         $tarcza->setInitialFee(30);
         $tarcza->setAdditionalFee(20);
-        $tarcza->setAttemptLimit(5);
+        $tarcza->setAttemptLimit(0);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($pneumatyk);
         $manager->persist($tarcza);
@@ -144,40 +154,36 @@ class AppFixtures extends Fixture
         $tarcza->setName("Tarcza Królowej KBS  ( tylko dla pań )");
         $tarcza->setInitialFee(30);
         $tarcza->setAdditionalFee(20);
-        $tarcza->setAttemptLimit(5);
+        $tarcza->setAttemptLimit(0);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($pneumatyk);
         $manager->persist($tarcza);
 
         $tarcza = new Category();
         $tarcza->setName("Tarcza Młodzieżowa ( do lat 16 )");
-        $tarcza->setInitialFee(30);
-        $tarcza->setAdditionalFee(20);
-        $tarcza->setAttemptLimit(5);
+        $tarcza->setInitialFee(10);
+        $tarcza->setAdditionalFee(5);
+        $tarcza->setAttemptLimit(0);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($pneumatyk);
         $manager->persist($tarcza);
 
         $attemptPierwszy = new Attempt();
-        $attemptPierwszy->setAttemptNumber(1);
         $attemptPierwszy->setCategory($tarczaBracka);
         $attemptPierwszy->setCompetitor($pierwszy);
         $manager->persist($attemptPierwszy);
         
         $attemptPierwszy2 = new Attempt();
-        $attemptPierwszy2->setAttemptNumber(2);
         $attemptPierwszy2->setCategory($tarczaBracka);
         $attemptPierwszy2->setCompetitor($pierwszy);
         $manager->persist($attemptPierwszy2);
 
         $attemptDrugi = new Attempt();
-        $attemptDrugi->setAttemptNumber(1);
         $attemptDrugi->setCategory($tarczaBracka);
         $attemptDrugi->setCompetitor($drugi);
         $manager->persist($attemptDrugi);
 
         $attemptDrugi2 = new Attempt();
-        $attemptDrugi2->setAttemptNumber(1);
         $attemptDrugi2->setCategory($tarczaSponsora);
         $attemptDrugi2->setCompetitor($drugi);
         $manager->persist($attemptDrugi2);

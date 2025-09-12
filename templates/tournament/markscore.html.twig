@@ -1,0 +1,166 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Zapisz Wynik{% endblock %}
+
+{% block body %}
+
+<div class="flex-wrapper">
+    <div class="basic-form">
+
+        <h1>Zapisz wynik tarczy</h1>
+
+        <div style="margin: 20px auto 0 auto; position: relative; width: 40em;">
+            <input type="text" id="competitorInput" placeholder="Zawodnik" class="expandable-list-label">
+            <ul id="competitorList" class="expandable-list">
+                {% for competitor in competitors %}
+                    <li data-id="{{ competitor.id }}" data-name="{{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}" style="padding: 8px; cursor: pointer;">
+                        {{ competitor.id }}. {{ competitor.first_name }} {{ competitor.last_name }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div id="attemptsContainer" style="margin-top: 20px;"></div>
+
+        <a href="{{ path('scoreboard', {'id': id}) }}" class="return-button">Powrót</a>
+    </div>
+</div>
+
+<script>
+(function(){
+    const allAttempts = {{ attempts|json_encode|raw }};
+    const csrfToken = '{{ csrf_token("submit_score") }}';
+
+    const input = document.getElementById('competitorInput');
+    const list = document.getElementById('competitorList');
+    const attemptsContainer = document.getElementById('attemptsContainer');
+    if (!input || !list || !attemptsContainer) return;
+
+    // funkcja dostępna globalnie bo używasz inline onclick w generowanym HTML
+    window.submitScore = function(attemptId, categoryId, shotsCount, btn) {
+        const row = btn.closest('tr');
+        let scores = [];
+        for (let i = 1; i <= shotsCount; i++) {
+            const val = row.querySelector(`input[name="score${i}_${attemptId}"]`).value;
+            scores.push(val);
+        }
+
+        fetch('/admin/submit-score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                attemptId: attemptId,
+                categoryId: categoryId,
+                scores: scores
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                row.remove();
+            } else {
+                alert('Błąd przy zapisie: ' + data.message);
+            }
+        })
+        .catch(error => console.error(error));
+    };
+
+    window.fetchAttempts = function(competitorId) {
+        const competitorAttempts = allAttempts.filter(a => a.competitor_id == competitorId);
+
+        if (competitorAttempts.length === 0) {
+            attemptsContainer.innerHTML = '<p>Brak wykupionych tarcz</p>';
+            return;
+        }
+
+        const grouped = {};
+        competitorAttempts.forEach(attempt => {
+            grouped[attempt.scores_per_attempt] = grouped[attempt.scores_per_attempt] || [];
+            grouped[attempt.scores_per_attempt].push(attempt);
+        });
+
+        let html = '';
+        Object.keys(grouped).forEach(shotsCount => {
+            html += `<h3>Tarcze z ${shotsCount} strzałami</h3>`;
+            html += `<table border="1" cellpadding="5" cellspacing="0" style="margin-bottom:20px;">
+                <thead>
+                    <tr>
+                        <th>Zawodnik</th>
+                        <th>Kategoria</th>`;
+            for (let i = 1; i <= shotsCount; i++) {
+                html += `<th>Strzał ${i}</th>`;
+            }
+            html += `<th>Zapisz</th></tr></thead><tbody>`;
+
+            grouped[shotsCount].forEach(attempt => {
+                let inputs = '';
+                for (let i = 1; i <= shotsCount; i++) {
+                    inputs += `<td><input type="number" name="score${i}_${attempt.attempt_id}" class="scoreInput" style="width:60px;" min="0" max="100"></td>`;
+                }
+
+                html += `
+                    <tr>
+                        <td>${attempt.competitor_name}</td>
+                        <td>${attempt.category_name}</td>
+                        ${inputs}
+                        <td><button type="button" onclick="submitScore(${attempt.attempt_id}, ${attempt.category_id}, ${shotsCount}, this)" class="icon-button">Zapisz</button></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+        });
+
+        attemptsContainer.innerHTML = html;
+
+        attemptsContainer.querySelectorAll('.scoreInput').forEach(inp => {
+            inp.addEventListener('input', () => {
+                let val = parseInt(inp.value, 10);
+                if (isNaN(val) || val < 0 || val > 100) inp.value = 0;
+            });
+        });
+    };
+
+    // eventy UI
+    input.addEventListener('focus', () => list.style.display = 'block');
+
+    input.addEventListener('input', () => {
+        const filter = input.value.toLowerCase();
+        let hasVisible = false;
+        list.querySelectorAll('li').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(filter)) {
+                item.style.display = 'block';
+                hasVisible = true;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        list.style.display = hasVisible ? 'block' : 'none';
+    });
+
+    list.addEventListener('click', e => {
+        if (e.target.tagName === 'LI') {
+            const name = e.target.dataset.name;
+            const id = e.target.dataset.id;
+
+            input.value = name;
+            list.style.display = 'none';
+
+            window.fetchAttempts(id);
+        }
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
+    });
+
+})();
+</script>
+
+
+{% endblock %}

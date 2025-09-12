@@ -15,7 +15,7 @@ class AttemptRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Attempt::class);
     }
-
+    
     //    /**
     //     * @return Attempt[] Returns an array of Attempt objects
     //     */

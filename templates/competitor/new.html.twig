@@ -52,11 +52,11 @@
 {% set lastId = form.last_name.vars.id %}
 
 <script>
-    const firstNameInput = document.getElementById('{{ firstId }}');
-    const lastNameInput = document.getElementById('{{ lastId }}');
-    const compareOutput = document.getElementById('compare');
-    const competitorList = document.getElementById('competitor-list');
-    const competitorItems = Array.from(competitorList.querySelectorAll('li'));
+    firstNameInput = document.getElementById('{{ firstId }}');
+    lastNameInput = document.getElementById('{{ lastId }}');
+    compareOutput = document.getElementById('compare');
+    competitorList = document.getElementById('competitor-list');
+    competitorItems = Array.from(competitorList.querySelectorAll('li'));
 
     function updateCompare() {
         const firstName = firstNameInput.value.trim();

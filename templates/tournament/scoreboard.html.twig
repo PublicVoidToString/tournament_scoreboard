@@ -8,9 +8,9 @@
 {% if is_granted('ROLE_ADMIN') %}
     <nav class="admin-menu">
         <ul class="admin-menu__list">
-            <li class="admin-menu__item"><a href={{ path('app_competitor_new', {'id': tournament.id}) }} class="admin-menu__link">Dodaj Zawodnika</a></li>
-            <li class="admin-menu__item"><a href={{ path('app_tournament_add_score', {'id': tournament.id}) }} class="admin-menu__link">Sprzedaj Tarczę</a></li>
-            <li class="admin-menu__item"><a href={{ path('app_tournament_mark_score', {'id': tournament.id}) }} class="admin-menu__link">Zapisz wynik tarczy</a></li>
+            <li class="admin-menu__item"><button type="button" onclick="window.location.href='{{ path('app_competitor_new', {'id': tournament.id}) }}'" class="admin-menu__link">Dodaj Zawodnika</button></li>
+            <li class="admin-menu__item"><button type="button" onclick="window.location.href='{{ path('app_tournament_add_score', {'id': tournament.id}) }}'" class="admin-menu__link">Sprzedaj Tarczę</button></li>
+            <li class="admin-menu__item"><button type="button" onclick="window.location.href='{{ path('app_tournament_mark_score', {'id': tournament.id}) }}'" class="admin-menu__link">Zapisz wynik tarczy</button></li>
             <li class="admin-menu__item">
                 <a href="#" class="admin-menu__link" onclick="event.preventDefault(); this.nextElementSibling.classList.toggle('hidden');">
                         Dodatkowe opcje
@@ -33,6 +33,8 @@
 <h1>{{ tournament.name }}</h1>
 
 {% for group, categories in groupedCategories %}
+    <div class="flex-wrapper" style=" flex-direction: column;">
+    <div class="basic-form">
     <h3>{{ categories[0]['description'] }}</h3>
     <table border="1" cellspacing="0" cellpadding="5">
         <thead>
@@ -61,6 +63,8 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
+    </div>
     <br>
 {% endfor %}
 

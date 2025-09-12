@@ -66,7 +66,7 @@
             </div>
 
             <button type="submit" class="confirm-button" >Dodaj tarcze</button>
-            <a href="{{ path('scoreboard', {'id': id}) }}" class="return-button">Powrót do turnieju</a>
+            <button type="button" onclick="window.location.href='{{ path('scoreboard', {'id': id}) }}'" class="return-button"> Powrót do turnieju</button>
         </form>
 
     </div>

@@ -41,6 +41,7 @@ table {
   width: auto;
   max-width: 100%;
   table-layout: auto;
+  margin-bottom:2em;
 }
 
 th, td {
@@ -114,12 +115,13 @@ td.passing-score {
 }
 
 .admin-menu__link {
+  width: 100%;
   display: block;
   padding: 12px 0;
   color: #fff;
   text-decoration: none;
   background: #333;
-  transition: background 0.3s;
+  transition: 0.3s;
 }
 
 .admin-menu__link:hover {
@@ -236,7 +238,7 @@ td.passing-score {
 }
 
 .icon-button:hover {
-  background-color: #eeffee;
+  background-color: #c9c9c9;
 }
 
 

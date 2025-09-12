@@ -40,4 +40,17 @@ class CategoryGroupRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    public function getCategoryGroups(int $tournamentId): array{
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+            SELECT * FROM category_group;
+        ";
+        return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);
+    }
+
+
+
+
 }

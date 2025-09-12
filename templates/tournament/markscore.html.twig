@@ -22,7 +22,7 @@
 
         <div id="attemptsContainer" style="margin-top: 20px;"></div>
 
-        <a href="{{ path('scoreboard', {'id': id}) }}" class="return-button">Powrót</a>
+        <button type="button" onclick="window.location.href='{{ path('scoreboard', {'id': id}) }}'" class="return-button"> Powrót do turnieju</button>
     </div>
 </div>
 

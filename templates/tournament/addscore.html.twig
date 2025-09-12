@@ -36,6 +36,7 @@
                 <thead>
                     <tr>
                         <th>Kategoria</th>
+                        <th>Opis</th>
                         <th>Wcześniej zakupiono</th>
                         <th>Usuń</th>
                         <th>Ilość</th>
@@ -46,6 +47,7 @@
                     {% for category in categories %}
                         <tr>
                             <td>{{ category.name }}</td>
+                            <td>{{ category.description }}</td>
                             <td>0</td>
                             <td style="padding:0;">
                                 <button type="button" id="remove-btn-{{ category.id }}" onclick="updateQuantity({{ category.id }}, -1)" class="icon-button">-</button>
@@ -134,12 +136,12 @@ document.addEventListener('turbo:load', () => {
 
         let rows = document.querySelectorAll('table tbody tr');
         rows.forEach(row => {
-            if (!row.children[1]) return;
-            row.children[1].textContent = 0;
+            if (!row.children[2]) return;
+            row.children[2].textContent = 0;
             let input = row.querySelector('input[id^="quantity-"]');
             if (!input) return;
             input.value = 0;
-            let categoryId = input.id.split('-')[1];
+            let categoryId = input.id.split('-')[2];
             window.quantities[categoryId] = 0;
             let addBtn = document.getElementById(`add-btn-${categoryId}`);
             if (addBtn) addBtn.disabled = false;
@@ -161,9 +163,9 @@ document.addEventListener('turbo:load', () => {
             let input = row.querySelector('input[id^="quantity-"]');
             if (!input) return;
             input.value = 0;
-            let categoryId = input.id.split('-')[1];
+            let categoryId = input.id.split('-')[2];
             let attempt = attempts.find(a => a.id == categoryId);
-            row.children[1].textContent = attempt ? attempt.count : 0;
+            row.children[2].textContent = attempt ? attempt.count : 0;
             window.quantities[categoryId] = 0;
 
             let addBtn = document.getElementById(`add-btn-${categoryId}`);

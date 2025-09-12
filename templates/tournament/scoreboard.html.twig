@@ -4,6 +4,35 @@
 
 {% block body %}
 
+<style>
+/* Layout / admin */
+.admin-menu__list { list-style:none; padding:0; margin:0; display:flex; gap:8px; }
+.admin-menu__item { margin:0; }
+.admin-menu__link { cursor:pointer; }
+
+/* Toggle header */
+.toggle-table { cursor: pointer; user-select: none; padding: 0.4rem; }
+
+/* Table wrapper hidden by default */
+.table-wrapper { display: none; width: 100%; box-sizing: border-box; overflow-x: auto; padding: 0.5rem 0; }
+
+/* When open, show block and allow centering */
+.table-wrapper.open { display: block; }
+
+/* Center table */
+.table-wrapper table { margin-left: auto; margin-right: auto; border-collapse: collapse; width: auto; max-width: 100%; }
+
+/* Optional: make basic-form center its content */
+.basic-form { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+/* Make H3 full-width but text centered */
+.basic-form h3 { width: 100%; text-align: center; margin: 0.4rem 0; }
+
+/* Small helpers */
+.passing-score { background: #dff0d8; }
+.best-score { background: #fcf8e3; }
+.return-button { display: inline-block; margin-top: 1rem; }
+</style>
 
 {% if is_granted('ROLE_ADMIN') %}
     <nav class="admin-menu">
@@ -12,14 +41,15 @@
             <li class="admin-menu__item"><button type="button" onclick="window.location.href='{{ path('app_tournament_add_score', {'id': tournament.id}) }}'" class="admin-menu__link">Sprzedaj Tarczę</button></li>
             <li class="admin-menu__item"><button type="button" onclick="window.location.href='{{ path('app_tournament_mark_score', {'id': tournament.id}) }}'" class="admin-menu__link">Zapisz wynik tarczy</button></li>
             <li class="admin-menu__item">
-                <a href="#" class="admin-menu__link" onclick="event.preventDefault(); this.nextElementSibling.classList.toggle('hidden');">
+                <button type="button"  class="admin-menu__link" onclick="event.preventDefault(); this.nextElementSibling.classList.toggle('hidden');">
                         Dodatkowe opcje
-                </a>
+                </button>
                 <ul class="submenu hidden">
-                    <li><a href={{ path('app_tournament_exchange_attempt', {'id': tournament.id}) }}>Wymień tarczę</a></li>
-                    <li><a href="#">Popraw wynik</a></li>
-                    <li><a href="#">Edytuj zawodnika</a></li>
-                    <li><a href="#">Ustawienia konkurencji</a></li>
+                    <li><button type="button" onclick="window.location.href=' {{ path('app_tournament_exchange_attempt', {'id': tournament.id}) }}'" class="admin-menu__link" >Wymień tarczę</button></li>
+                    <li><button type="button" onclick="window.location.href='#'" class="admin-menu__link">Popraw wynik</button></li>
+                    <li><button type="button" onclick="window.location.href='#'" class="admin-menu__link">Edytuj zawodnika</button></li>
+                    <li><button type="button" onclick="window.location.href='{{ path('app_category_edit', {'id': tournament.id}) }}'" class="admin-menu__link">Ustawienia konkurencji</button></li>
+                    <li><button type="button" onclick="window.location.href='#'" class="admin-menu__link">Podsumowanie Turnieju</button></li>
                     <li class="admin-menu__item admin-menu__logout">
                         <a href="{{ path('app_logout') }}">Wyloguj</a>
                     </li>
@@ -29,44 +59,58 @@
     </nav>
 {% endif %}
 
-
 <h1>{{ tournament.name }}</h1>
 
-{% for group, categories in groupedCategories %}
-    <div class="flex-wrapper" style=" flex-direction: column;">
-    <div class="basic-form">
-    <h3>{{ categories[0]['description'] }}</h3>
-    <table border="1" cellspacing="0" cellpadding="5">
-        <thead>
-            <tr>
-                <th rowspan="2">Name</th>
-                {% for cat in categories %}
-                    {% set limit = cat.attempt_limit == 0 ? 5 : cat.attempt_limit %}
-                    <th colspan="{{ limit + 1 }}">{{ cat.name }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for name, scoresByCategory in results %}
-                <tr>
-                    <td>{{ name }}</td>
-                    {% for cat in categories %}
-                        {% set scores = scoresByCategory[cat.id] %}
-                        {% set maxAttempts = (cat.attempt_limit == 0 or cat.attempt_limit > 5) ? 5 : cat.attempt_limit %}
-                        {% for i in 0..maxAttempts %}
-                            <td class="{% if i == maxAttempts %}{{ scores[i] is defined and scores[i] >= cat.third_best_score ? 'passing-score' : 'best-score' }}{% endif %}">
-                            {{ scores[i] is defined ? scores[i] : '' }}
-                            </td>
+<div class="flex-wrapper" style="flex-direction: column;">
+    {% for group, categories in groupedCategories %}
+        <div class="basic-form">
+            <h3 class="toggle-table" role="button" aria-expanded="false">{{ categories[0]['description'] }}</h3>
+
+            <div class="table-wrapper open">
+                <table border="1" cellspacing="0" cellpadding="5">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Name</th>
+                            {% for cat in categories %}
+                                {% set limit = cat.attempt_limit == 0 ? 5 : cat.attempt_limit %}
+                                <th colspan="{{ limit + 1 }}">{{ cat.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, scoresByCategory in results %}
+                            <tr>
+                                <td>{{ name }}</td>
+                                {% for cat in categories %}
+                                    {% set scores = scoresByCategory[cat.id] %}
+                                    {% set maxAttempts = (cat.attempt_limit == 0 or cat.attempt_limit > 5) ? 5 : cat.attempt_limit %}
+                                    {% for i in 0..maxAttempts %}
+                                        <td class="{% if i == maxAttempts %}{{ scores[i] is defined and scores[i] >= cat.third_best_score ? 'passing-score' : 'best-score' }}{% endif %}">
+                                            {{ scores[i] is defined ? scores[i] : '' }}
+                                        </td>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tr>
                         {% endfor %}
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-    </div>
-    <br>
-{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <br>
+    {% endfor %}
+</div>
 
 <a href="{{ path('app_tournament_index') }}" class="return-button">Powrót do listy turniejów</a>
+
+<script>
+
+document.querySelectorAll(".toggle-table").forEach(h3 => {
+    h3.addEventListener("click", () => {
+        const tableDiv = h3.nextElementSibling;
+        const isOpen = tableDiv.classList.toggle('open');
+        h3.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+});
+</script>
+
 {% endblock %}

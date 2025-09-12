@@ -29,34 +29,6 @@ class AppFixtures extends Fixture
         $niezrzeszony->setLocation("Null");
         $manager->persist($niezrzeszony);
 
-        $kurkoweWejherowo = new Association();
-        $kurkoweWejherowo->setName("Bractwo Kurkowe 1");
-        $kurkoweWejherowo->setLocation("Wejherowo");
-        $manager->persist($kurkoweWejherowo);
-
-        $kurkoweGdynia = new Association();
-        $kurkoweGdynia->setName("Bractwo Kurkowe 2");
-        $kurkoweGdynia->setLocation("Gdynia");
-        $manager->persist($kurkoweGdynia);
-
-        $pierwszy = new Competitor();
-        $pierwszy->setFirstName("Strzelec");
-        $pierwszy->setLastName("Pierwszy");
-        $pierwszy->setAssociation($kurkoweWejherowo);
-        $manager->persist($pierwszy);
-
-        $drugi = new Competitor();
-        $drugi->setFirstName("Strzelec");
-        $drugi->setLastName("Drugi");
-        $drugi->setAssociation($kurkoweWejherowo);
-        $manager->persist($drugi);
-        
-        $trzeci = new Competitor();
-        $trzeci->setFirstName("Strzelec");
-        $trzeci->setLastName("Trzeci");
-        $trzeci->setAssociation($niezrzeszony);
-        $manager->persist($trzeci);
-
         $zawody = new Tournament();
         $zawody->setName("V Turniej Strzelecki dla upamiętnienia I Morskiego Pułku Strzelców \"Za Wolność Kaszub i Polski\"");
         $zawody->setDate(new \DateTime());
@@ -68,7 +40,7 @@ class AppFixtures extends Fixture
         $manager->persist($pneumatyk);
 
         $kbks = new CategoryGroup();
-        $kbks->setDescription("Karabinek sportowy KBKS - 50 metrów");
+        $kbks->setDescription("Karabinek sportowy KBKS - 50 metrów - 3 strzały");
         $kbks->setScoresPerAttempt(3);
         $manager->persist($kbks);
 
@@ -78,7 +50,7 @@ class AppFixtures extends Fixture
         $manager->persist($kbkspiatka);
 
         $luk = new CategoryGroup();
-        $luk->setDescription("Łuk klasyczny - 20 metrów");
+        $luk->setDescription("Łuk klasyczny - 20 metrów - 3 strzały");
         $luk->setScoresPerAttempt(3);
         $manager->persist($luk);
 
@@ -117,32 +89,23 @@ class AppFixtures extends Fixture
         $tarcza = new Category();
         $tarcza->setName("Strzelanie o Tytuł Mistrza Okręgu Pomorskiego");
         $tarcza->setInitialFee(50);
-        $tarcza->setAdditionalFee(0);
+        $tarcza->setAdditionalFee(9999);
         $tarcza->setAttemptLimit(1);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($kbks);
         $manager->persist($tarcza);
         
-        $tarczaBracka = new Category();
-        $tarczaBracka->setName("Tarcza Skarbnika");
-        $tarczaBracka->setInitialFee(30);
-        $tarczaBracka->setAdditionalFee(20);
-        $tarczaBracka->setAttemptLimit(0);
-        $tarczaBracka->setTournament($zawody);
-        $tarczaBracka->setCategoryGroup($kbks);
-        $manager->persist($tarczaBracka);
-        
-        $tarczaGosci = new Category();
-        $tarczaGosci->setName("Tarcza Posła na Sejm RP 1");
-        $tarczaGosci->setInitialFee(30);
-        $tarczaGosci->setAdditionalFee(20);
-        $tarczaGosci->setAttemptLimit(0);
-        $tarczaGosci->setTournament($zawody);
-        $tarczaGosci->setCategoryGroup($pneumatyk);
-        $manager->persist($tarczaGosci);
-
         $tarcza = new Category();
-        $tarcza->setName("Tarcza Posła na Sejm RP 2");
+        $tarcza->setName("Tarcza Skarbnika");
+        $tarcza->setInitialFee(30);
+        $tarcza->setAdditionalFee(20);
+        $tarcza->setAttemptLimit(0);
+        $tarcza->setTournament($zawody);
+        $tarcza->setCategoryGroup($kbks);
+        $manager->persist($tarcza);
+        
+        $tarcza = new Category();
+        $tarcza->setName("Tarcza Posła na Sejm RP Kazimierza Plocke");
         $tarcza->setInitialFee(30);
         $tarcza->setAdditionalFee(20);
         $tarcza->setAttemptLimit(0);
@@ -151,7 +114,16 @@ class AppFixtures extends Fixture
         $manager->persist($tarcza);
 
         $tarcza = new Category();
-        $tarcza->setName("Tarcza Królowej KBS  ( tylko dla pań )");
+        $tarcza->setName("Tarcza Posła na Sejm RP Michała Kowalskiego");
+        $tarcza->setInitialFee(30);
+        $tarcza->setAdditionalFee(20);
+        $tarcza->setAttemptLimit(0);
+        $tarcza->setTournament($zawody);
+        $tarcza->setCategoryGroup($pneumatyk);
+        $manager->persist($tarcza);
+
+        $tarcza = new Category();
+        $tarcza->setName("Tarcza Królowej KBS Wejherowo ( tylko dla pań )");
         $tarcza->setInitialFee(30);
         $tarcza->setAdditionalFee(20);
         $tarcza->setAttemptLimit(0);
@@ -168,90 +140,10 @@ class AppFixtures extends Fixture
         $tarcza->setCategoryGroup($pneumatyk);
         $manager->persist($tarcza);
 
-        $attemptPierwszy = new Attempt();
-        $attemptPierwszy->setCategory($tarczaBracka);
-        $attemptPierwszy->setCompetitor($pierwszy);
-        $manager->persist($attemptPierwszy);
-        
-        $attemptPierwszy2 = new Attempt();
-        $attemptPierwszy2->setCategory($tarczaBracka);
-        $attemptPierwszy2->setCompetitor($pierwszy);
-        $manager->persist($attemptPierwszy2);
-
-        $attemptDrugi = new Attempt();
-        $attemptDrugi->setCategory($tarczaBracka);
-        $attemptDrugi->setCompetitor($drugi);
-        $manager->persist($attemptDrugi);
-
-        $attemptDrugi2 = new Attempt();
-        $attemptDrugi2->setCategory($tarczaSponsora);
-        $attemptDrugi2->setCompetitor($drugi);
-        $manager->persist($attemptDrugi2);
-
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptPierwszy);
-        $strzal->setScore(9);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptPierwszy);
-        $strzal->setScore(8);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptPierwszy);
-        $strzal->setScore(9);
-        $manager->persist($strzal);
-
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptPierwszy2);
-        $strzal->setScore(9);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptPierwszy2);
-        $strzal->setScore(9);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptPierwszy2);
-        $strzal->setScore(10);
-        $manager->persist($strzal);
-
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptDrugi);
-        $strzal->setScore(8);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptDrugi);
-        $strzal->setScore(10);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptDrugi);
-        $strzal->setScore(10);
-        $manager->persist($strzal);
-
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptDrugi2);
-        $strzal->setScore(8);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptDrugi2);
-        $strzal->setScore(6);
-        $manager->persist($strzal);
-        
-        $strzal = new AttemptScore();
-        $strzal->setAttempt($attemptDrugi2);
-        $strzal->setScore(5);
-        $manager->persist($strzal);
-
         $admin = new User(); //temporary admin account to test authorization
         $admin->setUsername("admin");
         $admin->setRoles(['ROLE_ADMIN']);
-        $admin->setPassword($this->passwordHasher->hashPassword($admin, 'admin'));
+        $admin->setPassword($this->passwordHasher->hashPassword($admin, 'Kurk_admIn'));
 
         $manager->persist($admin);
         $manager->flush();

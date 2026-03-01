@@ -29,7 +29,7 @@ final class Version20250831124143 extends AbstractMigration
         $this->addSql('CREATE TABLE category (id SERIAL NOT NULL, tournament_id INT NOT NULL, category_group_id INT NOT NULL, name VARCHAR(255) NOT NULL, initial_fee NUMERIC(5, 2) NOT NULL, additional_fee NUMERIC(5, 2) NOT NULL, attempt_limit INT NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_64C19C133D1A3E7 ON category (tournament_id)');
         $this->addSql('CREATE INDEX IDX_64C19C1294CCED ON category (category_group_id)');
-        $this->addSql('CREATE TABLE category_group (id SERIAL NOT NULL, description VARCHAR(255) NOT NULL, scores_per_attempt INT NOT NULL, PRIMARY KEY(id))');
+        $this->addSql('CREATE TABLE category_group (id SERIAL NOT NULL, description VARCHAR(255) NOT NULL, abbreviation VARCHAR(15) NOT NULL, scores_per_attempt INT NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE TABLE competitor (id SERIAL NOT NULL, association_id INT NOT NULL, first_name VARCHAR(255) NOT NULL, last_name VARCHAR(255) NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_E0D53BAAEFB9C8A5 ON competitor (association_id)');
         $this->addSql('CREATE TABLE tournament (id SERIAL NOT NULL, name VARCHAR(255) NOT NULL, date TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, image_url VARCHAR(255) DEFAULT NULL, PRIMARY KEY(id))');

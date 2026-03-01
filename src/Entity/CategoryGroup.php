@@ -18,6 +18,9 @@ class CategoryGroup
     #[ORM\Column(length: 255)]
     private ?string $description = null;
 
+    #[ORM\Column(length: 15)]
+    private ?string $abbreviation = null;
+
     #[ORM\Column]
     private ?int $scores_per_attempt = null;
 
@@ -45,6 +48,18 @@ class CategoryGroup
     public function setDescription(string $description): static
     {
         $this->description = $description;
+
+        return $this;
+    }
+
+    public function getAbbreviation(): ?string
+    {
+        return $this->abbreviation;
+    }
+
+    public function setAbbreviation(string $abbreviation): static
+    {
+        $this->abbreviation = $abbreviation;
 
         return $this;
     }

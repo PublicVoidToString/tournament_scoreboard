@@ -3,9 +3,10 @@
 {% block title %}Tournament index{% endblock %}
 
 {% block body %}
+<div class="contentBoxSingle">
     <h1>Lista Turniejów</h1>
 
-    <table class="table">
+    <table class="tableList">
         <thead>
             <tr>
                 <th>Nazwa</th>
@@ -17,10 +18,12 @@
         {% for tournament in tournaments %}
             <tr>
                 <td>{{ tournament.name }}</td>
-                <td>{{ tournament.date ? tournament.date|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ tournament.date ? tournament.date|date('Y-m-d') : '' }}</td>
                 <td>
-                    <a href="{{ path('scoreboard', {'id': tournament.id}) }}" class="button">Pokaż</a>
-                    <a href="{{ path('app_tournament_edit', {'id': tournament.id}) }}" class="button">Edytuj</a>
+                    <a href="{{ path('scoreboard', {'id': tournament.id}) }}" class="smallButton">Pokaż</a>
+                    {% if app.user %}
+                        <a href="{{ path('app_tournament_edit', {'id': tournament.id}) }}" class="smallButton">Edytuj</a>
+                    {% endif %}
                 </td>
             </tr>
         {% else %}
@@ -31,5 +34,8 @@
         </tbody>
     </table>
 
-    <a href="{{ path('app_tournament_new') }}" class="button">Dodaj nowy</a>
+    {% if app.user %}
+        <a href="{{ path('app_tournament_new') }}" class="aButton">Dodaj nowy</a>
+    {% endif %}
+</div>
 {% endblock %}

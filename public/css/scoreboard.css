@@ -1,0 +1,91 @@
+/* Table Style CSS*/
+
+.singleTable {
+    font-size: 1em;
+    max-width: max-content;
+    margin: 0em auto;
+    background: #ffffffaa;
+    border: 0.4em double #000000;
+    box-shadow: 0 5px 5px #000000;
+    text-align:center;
+}
+
+.scoreTable {
+    margin: 0 auto;
+    border: 3px solid #000000;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+tbody tr:nth-child(2n) {
+    background-color: #33663322;
+    color: #000000;
+}
+
+tbody tr:nth-child(4n) {
+    background-color: #33663366;
+    color: #000000;
+}
+
+
+/* Rows CSS*/
+
+table td, table th {
+    border: 1px solid black;
+    width: auto;
+}
+
+.score, .passing-score, .last-player-score{
+    width: 1.5em;
+}
+
+.last-player-score {
+    background: #33333344;
+}
+
+.passing-score {
+    background: #049417d4;
+    border-right: 2px solid #000000;
+}
+
+
+/* Admin menu*/
+
+
+.admin-menu-list {
+    font-size:1.2em;
+    display: flex;
+    margin: 0 0 0.5em 0;
+    padding: 0;
+    list-style: none;
+}
+
+.admin-menu-link {
+    padding: 0.5em 1em;
+    color: #FFFFFF;
+    background: #333333;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.admin-menu-link:hover,.admin-submenu-link:hover {
+    background: #555;
+}
+
+.show_submenu:hover > .submenu {
+    display: flex;
+}
+
+.submenu {
+    display: none;
+    flex-direction: column;
+    padding: 0;
+    position: absolute;
+}
+
+.admin-submenu-link {
+    padding: 0.5em 1.7em;
+    cursor: pointer;
+    color: #FFFFFF;
+    background: #333333;
+}

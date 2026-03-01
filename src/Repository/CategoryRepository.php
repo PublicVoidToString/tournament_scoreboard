@@ -75,6 +75,7 @@ class CategoryRepository extends ServiceEntityRepository
                 c.name,
                 c.attempt_limit,
                 cg.description,
+                cg.abbreviation,
                 c.category_group_id AS group_id,
                 COALESCE(rs.best_score, 1) AS third_best_score,
                 c.initial_fee,
@@ -83,6 +84,7 @@ class CategoryRepository extends ServiceEntityRepository
             FROM category c
             LEFT JOIN category_group cg ON c.category_group_id = cg.id
             LEFT JOIN ranked_scores rs ON rs.category_id = c.id AND rs.rn = 3
+            WHERE c.tournament_id = :tournamentId
             ORDER BY c.category_group_id, c.id;
             ";
         return $conn->fetchAllAssociative($sql, ['tournamentId' => $tournamentId]);

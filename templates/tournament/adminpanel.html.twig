@@ -1,0 +1,452 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Panel Admina{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/adminpanel.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="flexWrapperRow">
+    <div class="flexWrapperRow">
+
+        <!-- Competitor List -->
+        <div class="contentBoxSingle">
+            <h2>Lista Zawodników</h2>
+
+            <input type="text" id="searchInput" placeholder="Szukaj zawodnika...">
+
+            <div class="list-wrapper">
+                <div class="button_list" id="competitorList">
+                    {% for competitor in competitor_list %}
+                        <button
+                            class="competitor-btn"
+                            data-id="{{ competitor['id'] }}"
+                            data-first="{{ competitor['first_name'] }}"
+                            data-last="{{ competitor['last_name'] }}"
+                            data-association-id="{{ competitor['association_id'] }}"
+                            data-association-name="{{ competitor['association'] }}"
+                        >
+                            {{ competitor['id'] }}.{{ competitor['first_name'] }} {{ competitor['last_name'] }}
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Attempt Table -->
+        <div class="contentBoxSingle">
+            <h2  style="width: 800px;">Sprzedaż Tarcz</h2>
+            <table class="attemptTable">
+                <tr>
+                    <th> Konkurencja </th>
+                    <th> Rodzaj </th>
+                    <th> Limit</th>
+                    <th> Posiadane </th>
+                    <th> Cena Zapisu</th>
+                    <th> Cena Powtórzenia</th>
+                    <th> Odejmnij </th>
+                    <th> Wybrana ilość </th>
+                    <th> Dodaj </th>
+                </tr>
+                {% for category in categories %}
+                    <tr>
+                        <td> {{ category['name'] }} </td>
+                        <td> {{ category['abbreviation'] }} </td>
+                        <td> {% if category['attempt_limit']==0 %} Nieograniczone {% else %} {{ category['attempt_limit'] }} {% endif %} </td>
+                        <td> <label id="owned_amount_{{category['id']}}"> 0 </label> </td>
+                        <td> {{ category['initial_fee'] }} zł </td>
+                        <td>  {% if category['attempt_limit']==0 %} {{ category['additional_fee'] }} zł {% else %} Jedna na osobę {% endif %} </td>
+                        <td> <button class="symbol-btn" id="subtract_{{category['id']}}" > - </button> </td>
+                        <td> <label 
+                            id="selected_amount_{{category['id']}}" 
+                            data-initial-fee="{{category['initial_fee']}}"
+                            data-additional-fee="{{category['additional_fee']}}"
+                        > 0 </label> </td>
+                        <td> <button 
+                            class="symbol-btn" 
+                            id="add_{{category['id']}}"
+                            data-attempt-limit="{{category['attempt_limit']}}" 
+                         > + </button> </td>
+                    </tr>
+                {% endfor %}
+            </table>
+            <h2> <label id="selectedCompetitor"> Wybrany zawodnik: </label> </h2>
+            <h2> <label id="totalCostLabel"> Suma całkowita: 0zł </label> </h2>
+        </div>
+    </div>
+
+    <!-- EDIT PANEL -->
+    <div class="flexWrapperColumn">
+        <div class="contentBoxSingle">
+            <h2>Wybrany Zawodnik</h2>
+
+            <div class="competitor-data">
+                <label>ID:</label>
+                <input type="text" id="selected-competitor-id" readonly>
+
+                <label>Imię:</label>
+                <input type="text" id="selected-competitor-firstname">
+
+                <label>Nazwisko:</label>
+                <input type="text" id="selected-competitor-lastname">
+
+                <label>Klub:</label>
+                <select id="selected-competitor-association">
+                    {% for association in association_list %}
+                        <option value="{{ association['id'] }}">{{ association['name'] }}</option>
+                    {% endfor %}
+                </select>
+
+                <button id="updateBtn"> Zapisz zmiany </button>
+            </div>
+        </div>
+
+        <!-- NEW PANEL -->
+        <div class="contentBoxSingle">
+            <h2>Dodaj Zawodnika</h2>
+
+            <div class="competitor-data">
+                <label>Imię:</label>
+                <input type="text" id="new-first">
+
+                <label>Nazwisko:</label>
+                <input type="text" id="new-last">
+
+                <label>Klub:</label>
+                <select id="new-association">
+                    {% for association in association_list %}
+                        <option value="{{ association['id'] }}">{{ association['name'] }}</option>
+                    {% endfor %}
+                </select>
+
+                <button id="newBtn">Dodaj</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block bodyjavascripts %}
+<script>
+
+    const catSelectedValueId = {}; //stors selected value for categoryId
+    const catSelectedCostId = []; //stors cost of selected categories
+
+    let selectedButton = null;
+    let competitorsAttempts = [];
+
+    let searchInputElem = null;
+    let competitorListElem = null;
+    let updateBtnElem = null;
+    let newBtnElem = null;
+    let costLabel = null;
+    let competitorLabel = null;
+
+    let selCompIdElem = null;
+    let selCompFirstNameElem = null;
+    let selCompLastNameElem = null;
+    let selCompAssociationElem = null;
+
+    const catSelectedLabelsElemArray = [];
+    const catOwnedLabelsElemArray = [];
+    const competitorButtonArray = [];
+
+    const elements = {
+        searchInput: null,
+        competitorList: null,
+        updateBtn: null,
+        newBtn: null,
+        label: {
+            selectedCompetitor: null,
+            totalCost: null,
+
+        },
+        selectedCompetitorWindow: {
+            id: null,
+            firstName: null,
+            lastName: null,
+            association: null
+        }
+    }
+
+    // --- HELPER FUNCTION FOR SELECTION ---
+    function selectCompetitor(button) {
+        competitorButtonArray.forEach(b => b.classList.remove("active"));
+        button.classList.add("active");
+        selectedButton = button;
+
+        updateSelectedCompetitorValues();
+        clearCategoryTable();
+    }
+
+    function updateSelectedCompetitorValues(){
+        selCompIdElem.value = selectedButton.dataset.id;
+        selCompFirstNameElem.value = selectedButton.dataset.first;
+        selCompLastNameElem.value = selectedButton.dataset.last;
+        selCompAssociationElem.value = selectedButton.dataset.associationId;
+        competitorLabel.textContent = "Wybrany zawodnik: " + selectedButton.dataset.first + " " + selectedButton.dataset.last;
+        catOwnedLabelsElemArray.forEach((element, id) => {
+            element.textContent= competitorsAttempts[selectedButton.dataset.id]['categories'][id]['attempts'];
+        });
+    } //Finished
+
+    function updateCategoryTable(){
+        catSelectedLabelsElemArray.forEach((_, index)=> {
+            updateCategorySelectedRow(index, false);
+        });
+        totalCost = 0;
+        catSelectedCostId.forEach(element => { totalCost+=element });
+        costLabel.textContent  = "Suma całkowita: " + totalCost + "zł";
+
+    }
+document.addEventListener("DOMContentLoaded", function () {
+    
+competitorsAttempts = {{ competitors_attempts|json_encode|raw }};
+
+searchInputElem = document.getElementById("searchInput");
+competitorListElem = document.getElementById("competitorList");
+updateBtnElem = document.getElementById("updateBtn");
+newBtnElem = document.getElementById("newBtn");
+costLabel = document.getElementById("totalCostLabel");
+competitorLabel = document.getElementById("selectedCompetitor");
+
+selCompIdElem = document.getElementById("selected-competitor-id");
+selCompFirstNameElem = document.getElementById("selected-competitor-firstname");
+selCompLastNameElem = document.getElementById("selected-competitor-lastname");
+selCompAssociationElem = document.getElementById("selected-competitor-association");
+
+
+
+
+    function updateCategorySelectedRow(categoryId, costUpdate){
+        const owned = parseInt(catOwnedLabelsElemArray[categoryId].textContent.trim()) || 0;
+        if (catSelectedLabelsElemArray[categoryId]) {
+            const selected_amount = catSelectedValueId[categoryId];
+            if(selected_amount ==0) catSelectedLabelsElemArray[categoryId].textContent = "0";
+            else {
+                const additional_fee = parseFloat(catSelectedLabelsElemArray[categoryId].dataset.additionalFee);
+                if(owned>0){
+                    catSelectedCostId[categoryId] = selected_amount*additional_fee;
+                    catSelectedLabelsElemArray[categoryId].textContent = selected_amount + " ( " + catSelectedCostId[categoryId] + "zł )";
+                } else{
+                    const initial_fee = parseFloat(catSelectedLabelsElemArray[categoryId].dataset.initialFee);
+                    catSelectedCostId[categoryId] = initial_fee + (selected_amount-1) * additional_fee;
+                    catSelectedLabelsElemArray[categoryId].textContent = selected_amount + " ( " + catSelectedCostId[categoryId] + "zł )";
+                }
+            }
+        }
+
+        if(costUpdate==true){
+            totalCost = 0;
+            catSelectedCostId.forEach(element => {
+                totalCost+=element
+            });
+            costLabel.textContent  = "Suma całkowita: " + totalCost + "zł";
+        }
+    }
+
+    function clearCategoryTable() {
+        Object.keys(catSelectedValueId).forEach(categoryId => {
+            catSelectedValueId[categoryId] = 0;
+            catSelectedCostId[categoryId] =0;
+            catSelectedLabelsElemArray[categoryId].textContent="0";
+        });
+        //catSelectedLabelsElemArray.forEach(element => { element.textContent = "0"; }); //if everything works delete those to lines
+        //catOwnedLabelsElemArray.forEach(element => { element.textContent = "0"; });
+        updateCategoryTable();
+    }
+
+
+    // --- INITIAL BUTTONS ---
+    document.querySelectorAll(".competitor-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            selectCompetitor(this);
+        });
+        competitorButtonArray[btn.dataset.id] = btn;
+        
+    });
+
+    document.querySelectorAll("[id^='selected_amount_']").forEach(label => {
+        const categoryId = label.id.replace("selected_amount_", "");
+        catSelectedValueId[categoryId] = 0;
+        catSelectedLabelsElemArray[categoryId]=label;
+    });
+
+    document.querySelectorAll("[id^='owned_amount_']").forEach(label => {
+        const categoryId = label.id.replace("owned_amount_", "");
+        catOwnedLabelsElemArray[categoryId]=label;
+    });
+
+    // --- SEARCH FUNCTION ---
+    searchInputElem.addEventListener("input", function() {
+        const value = this.value.toLowerCase();
+        competitorButtonArray.forEach(btn => {
+            const fullText =
+                btn.dataset.id + "." +
+                btn.dataset.first + " " +
+                btn.dataset.last + " " +
+                (btn.dataset.associationName || "");
+            const matches = fullText.toLowerCase().includes(value);
+            btn.style.display = matches ? "block" : "none";
+        });
+
+        // Clear selection if no matches
+        if (!Array.from(competitorButtonArray).some(b => b.style.display !== "none")) {
+            selCompIdElem.value = "";
+            selCompFirstNameElem.value = "";
+            selCompLastNameElem.value = "";
+            selCompAssociationElem.selectedIndex = 0;
+            selectedButton = null;
+        }
+    });
+
+    // --- UPDATE BUTTON ---
+    updateBtnElem.addEventListener("click", function () {
+        if (!selectedButton) return;
+
+        const updatedFirst = selCompFirstNameElem.value;
+        const updatedLast = selCompLastNameElem.value;
+        const updatedAssociationId = selCompAssociationElem.value;
+        const id = selCompIdElem.value;
+
+        // Update dataset and label
+        selectedButton.dataset.first = updatedFirst;
+        selectedButton.dataset.last = updatedLast;
+        selectedButton.dataset.associationId = updatedAssociationId;
+        selectedButton.textContent = id + "." + updatedFirst + " " + updatedLast;
+
+        fetch("{{ path('competitor_update') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-TOKEN": "{{ csrf_token('update_competitor') }}"
+            },
+            body: JSON.stringify({
+                id: id,
+                first_name: updatedFirst,
+                last_name: updatedLast,
+                association_id: updatedAssociationId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert("Zawodnik zaktualizowany pomyślnie!");
+            } else {
+                alert("Błąd aktualizacji: " + (data.error || "nieznany błąd"));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Błąd sieci podczas aktualizacji.");
+        });
+    });
+
+    // --- NEW BUTTON ---
+    newBtnElem.addEventListener("click", function () {
+        const first = document.getElementById("new-first").value;
+        const last = document.getElementById("new-last").value;
+        const associationId = document.getElementById("new-association").value;
+
+        fetch("{{ path('competitor_add') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: JSON.stringify({
+                first_name: first,
+                last_name: last,
+                association_id: associationId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                alert("Błąd dodawania: " + (data.error || "nieznany błąd"));
+                return;
+            }
+
+            const competitor = data.competitor;
+
+            // Create new button
+            const button = document.createElement("button");
+            button.classList.add("competitor-btn");
+            button.dataset.id = competitor.id;
+            button.dataset.first = competitor.first_name;
+            button.dataset.last = competitor.last_name;
+            button.dataset.associationId = competitor.association_id;
+            button.dataset.associationName = competitor.association_name;
+            button.textContent = competitor.id + "." + competitor.first_name + " " + competitor.last_name;
+
+            // Attach click handler
+            button.addEventListener("click", function() {
+                clearCategoryTable();
+            });
+
+            competitorListElem.appendChild(button);
+
+            // Optional: clear new competitor form
+            document.getElementById("new-first").value = "";
+            document.getElementById("new-last").value = "";
+            document.getElementById("new-association").selectedIndex = 0;
+
+            alert("Zawodnik dodany pomyślnie!");
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Błąd sieci przy dodawaniu zawodnika.");
+        });
+    });
+
+// ADD BUTTONS
+document.querySelectorAll("[id^='add_']").forEach(btn => {
+    btn.addEventListener("click", function () {
+        if(selectedButton==null){
+            alert("Nie wybrano zawodnika");
+            return;
+        }
+        const categoryId = this.id.replace("add_", "");
+        const ownedElem = document.getElementById("owned_amount_" + categoryId);
+        const owned = parseInt(ownedElem.textContent.trim()) || 0;
+        const attempt_limit = parseFloat(this.dataset.attemptLimit);
+        if(attempt_limit==0 || catSelectedValueId[categoryId] + owned < attempt_limit){
+            catSelectedValueId[categoryId]++;
+            updateCategorySelectedRow(categoryId, true);
+        } else {
+            alert("Wybrano maksymalną ilość tarcz w konkurencji");
+        }
+    });
+});
+
+
+
+// SUBTRACT BUTTONS
+document.querySelectorAll("[id^='subtract_']").forEach(btn => {
+    btn.addEventListener("click", function () {
+        const categoryId = this.id.replace("subtract_", "");
+        if (catSelectedValueId[categoryId] > 0) {
+            catSelectedValueId[categoryId]--;
+            updateCategorySelectedRow(categoryId, true);
+        }
+    });
+});
+
+    // --- CLEAR FORM ON LOAD ---
+    selCompIdElem.value = "";
+    selCompFirstNameElem.value = "";
+    selCompLastNameElem.value = "";
+    selCompAssociationElem.selectedIndex = 0;
+    selectedButton = null;
+    searchInput.value = "";
+
+});
+
+
+
+</script>
+{% endblock %}

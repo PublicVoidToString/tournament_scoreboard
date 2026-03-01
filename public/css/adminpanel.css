@@ -1,0 +1,77 @@
+/* Search input */
+
+.flexWrapperRow {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.flexWrapperColumn {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#searchInput {
+    width: 100%;
+    min-width: 250px;
+    margin-bottom: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* Scrollable wrapper */
+.list-wrapper {
+    max-height: 490px;   /* around 10 items visible */
+    overflow-y: auto;
+    border: 1px solid #ccc;
+}
+
+/* Button list layout */
+.button_list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Competitor buttons */
+.competitor-btn {
+    width: 100%;
+    text-align: left;
+    padding: 8px;
+    border: none;
+    border-bottom: 1px solid #eee;
+    background: white;
+    cursor: pointer;
+}
+
+/* Hover effect */
+.competitor-btn:hover {
+    background-color: #f2f2f2;
+}
+
+/* Active (selected) state */
+.competitor-btn.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.competitor-data {
+    display: flex;
+    flex-direction: column;
+    min-width: 250px;
+    max-width: 400px;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.attemptTable {
+    border: 1px solid black;
+    width: auto;
+}
+
+
+table td, table th {
+    border: 1px solid black;
+    width: auto;
+}

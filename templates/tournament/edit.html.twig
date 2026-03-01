@@ -3,11 +3,15 @@
 {% block title %}Edit Tournament{% endblock %}
 
 {% block body %}
+<div class="contentBoxSingle">
     <h1>Edit Tournament</h1>
 
     {{ include('tournament/_form.html.twig', {'button_label': 'Update'}) }}
 
-    <a href="{{ path('app_tournament_index') }}">back to list</a>
 
     {{ include('tournament/_delete_form.html.twig') }}
+
+    <a href="{{ path('app_tournament_index') }}" class="aButton" style="background-color: #444444dd;"> Powrót </button>
+
+</div>
 {% endblock %}

@@ -40,4 +40,19 @@ class AssociationRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+    public function getAssociations(): array{
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+            SELECT 
+                association.id,
+                association.name
+            FROM
+                association
+        ";
+        return $conn->fetchAllAssociative($sql);
+    }
+
+
+    
 }

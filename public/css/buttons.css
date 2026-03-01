@@ -1,0 +1,31 @@
+.aButton {
+  background-color: #228822dd;
+  color: white;
+  padding: 0.5em;
+  border-radius: 0.5em;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  display:inline;
+}
+
+.aButton:hover {
+  background-color: #2a6d2a;
+}
+
+.smallButton {
+  background-color: #228822dd;
+  font-size: 0.9em;
+  color: white;
+  padding: 0.4em;
+  border-radius: 0.5em;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+  margin: 0.1em 0em 0.1em 0em;
+}
+
+.smallButton:hover {
+  background-color: #2a6d2a;
+}

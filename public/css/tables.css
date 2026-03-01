@@ -1,0 +1,28 @@
+.tableList {
+    width: 100%;
+    text-align: center;
+    border-collapse: collapse;
+    margin-bottom: 1em;
+    font-family: Arial, sans-serif;
+    border: 0.2em outset #000000;
+}
+
+.tableList th,
+.tableList td {
+    padding: 10px;
+    border: 0.1em solid #000000;
+}
+
+.tableList td:first-child {
+    font-weight: bold;
+}
+    
+.tableList th {
+    background-color: #f9f9f9;
+    border-bottom: 0.2em solid #000000;
+    font-weight: bold;
+}
+
+.tableList tr:hover {
+    background-color: #88888844;
+}

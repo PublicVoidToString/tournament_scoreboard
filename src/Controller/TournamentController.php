@@ -5,19 +5,23 @@ namespace App\Controller;
 use App\Entity\Tournament;
 use App\Entity\Attempt;
 use App\Entity\AttemptScore;
+use App\Entity\Competitor;
 use App\Form\TournamentType;
 use App\Repository\TournamentRepository;
 use App\Repository\CompetitorRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\AttemptScoreRepository;
 use App\Repository\AttemptRepository;
+use App\Repository\AssociationRepository;
 use App\Form\AttemptScoreType;
+use COM;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Validator\Constraints\Length;
 
 #[Route('/')]
 final class TournamentController extends AbstractController
@@ -36,58 +40,97 @@ final class TournamentController extends AbstractController
     {
         $tournament = $tournamentRepository->find($id);
 
-        $categories = $tournamentRepository->getCategories($id);
-        $results = $tournamentRepository->getCompetitorswithScores($id, $categories);
+        $categories = $tournamentRepository->getCategoriesShortened($id);
+        $results = $tournamentRepository->getCompetitorsWithBestScores($id, $categories);
 
-        $categoryLimits = [];
-        foreach ($categories as $cat) {
-            $categoryLimits[$cat['id']] = $cat['attempt_limit'];
+        $categoriesById = [];
+        foreach ($categories as &$cat) {
+            $cat['results'] = [];
+            $categoriesById[$cat['id']] = $cat;
         }
+        unset($cat);
 
-        $groupedResults = [];
-        foreach ($results as $r) {
-            $name = $r['competitor_name'];
-            $catId = $r['category_id'];
-            $score = (float)$r['score'];
-
-            $groupedResults[$name][$catId][] = $score;
-        } 
-        foreach ($groupedResults as $name => &$categoriesScores) {
-            foreach ($categoryLimits as $catId => $maxAttempts) {
-                if (!isset($categoriesScores[$catId])) {
-                    $categoriesScores[$catId] = [];
+        foreach ($results as $res){
+            $categoryId = $res['category_id'];
+            if (isset($categoriesById[$categoryId])) {
+                if(!isset($categoriesById[$categoryId]['results'][$res['competitor_id']])){
+                    $categoriesById[$categoryId]['results'][$res['competitor_id']] = array("competitor_id" => $res['competitor_id'], "competitor_name" => $res['competitor_name'], "scores" => []);
                 }
-
-                $scores = $categoriesScores[$catId];
-                rsort($scores);
-
-                if ($maxAttempts === 0 || $maxAttempts > 5) {
-                    $scores = array_slice($scores, 0, 5);
-                    $scores = array_pad($scores, 5, 0);
-                } else {
-                    $scores = array_slice($scores, 0, $maxAttempts);
-                    $scores = array_pad($scores, $maxAttempts, 0);
-                }
-
-                $scores[] = max($scores);
-
-                $categoriesScores[$catId] = $scores;
+                $categoriesById[$categoryId]['results'][$res['competitor_id']]['scores'][] = $res['score'];
             }
-            ksort($categoriesScores);
         }
-        unset($categoriesScores);
 
 
-        $groupedCategories = [];
-        foreach ($categories as $cat) {
-            $group = explode(' ', $cat['group_id'])[0];
+        foreach ($categoriesById as $cat) {
+            $group = (int) explode(' ', $cat['group_id'])[0];
             $groupedCategories[$group][] = $cat;
         }
-        
+        // At this point groupedCategories stores all necessary info, next step adds empty scores
+
+        foreach($groupedCategories as &$catgroup){
+            $competitors = array();
+            foreach($catgroup as $cat){
+
+            $limit = $cat['attempt_limit'];
+            if ($limit == 0 || $limit > 5) $limit = 5;
+            $scores = array_fill(0, $limit, null);
+            $scores[] = 0;
+
+                foreach($cat['results'] as $comp){
+                    if (!isset($competitors[$comp['competitor_id']])){
+                        $competitors[$comp['competitor_id']]= array("competitor_id" => $comp['competitor_id'], "competitor_name" => $comp['competitor_name'], "scores" => $scores);
+                    }
+                }
+            }
+            foreach($catgroup as &$cat){
+                foreach($competitors as $competitor){
+                    if (!isset($cat['results'][$competitor['competitor_id']])){
+                        $cat['results'][$competitor['competitor_id']]=$competitor;
+                    }
+                }
+                asort($cat['results']);
+            }
+            unset($cat);
+        }
+        unset($catgroup);
+        // At this point groupedCategories stores all necessary info with empty scores, next steps organizes values for display
+        foreach($groupedCategories as &$catgroup){
+            foreach($catgroup as &$cat){
+
+                $limit = $cat['attempt_limit'];
+                if ($limit == 0 || $limit > 5) $limit = 5;
+                
+                foreach($cat['results'] as &$comp){
+                    $scores = [];
+                    $i = 0;
+                    $biggest = 0;
+                        foreach($comp['scores'] as $score){
+                            if($score>$biggest) $biggest=$score;
+                            if($i<$limit){
+                                $scores[] = $score;
+                                $i++;
+                            }else{
+                                if($score>min($scores)){
+                                    $scores[array_search(min($scores), $scores)] = $score;
+                                }
+                            }
+                        }
+                        while($i<$limit){
+                            $i+=1;
+                            $scores[] = " ";
+                        }
+                        $scores[] = $biggest;
+                        $comp['scores'] = $scores;
+                }
+                unset($comp);
+            }
+            unset($cat);
+        }
+        unset($catgroup);
+
         return $this->render('tournament/scoreboard.html.twig', [
             'tournament' => $tournament,
-            'results' => $groupedResults,
-            'groupedCategories' => $groupedCategories
+            'scoreboard' => $groupedCategories
         ]);
     }
 
@@ -148,113 +191,41 @@ final class TournamentController extends AbstractController
         return $this->redirectToRoute('app_tournament_index', [], Response::HTTP_SEE_OTHER);
     }
 
-#[Route('/tournament/admin/addScore/{id}', name: 'app_tournament_add_score', methods: ['GET','POST'])]
-public function addScore(
-    Request $request,
-    int $id,
-    TournamentRepository $tournamentRepository,
-    CompetitorRepository $competitorRepository,
-    CategoryRepository $categoryRepository,
-    EntityManagerInterface $em
-): Response {
-    $tournament = $tournamentRepository->find($id);
-    if (!$tournament) {
-        throw $this->createNotFoundException('Nie znaleziono turnieju');
-    }
+    #[Route('/tournament/admin/adminpanel/{id}', name: 'app_tournament_admin_panel', methods: ['GET'])]
+    public function adminPanel(
+        CompetitorRepository $competitorRepository,
+        AssociationRepository $associationRepository,
+        CategoryRepository $categoryRepository,
+        int $id,
+    ): Response {
+        $competitors = $competitorRepository->getAll();
+        $associations = $associationRepository->getAssociations();
+        $competitorsAttempts = $competitorRepository->getAttempsFromTournament($id);
+        $categories = $categoryRepository->getCategories($id);
+        $attemptsOrganized = [];
+        foreach ($competitorsAttempts as $row) {
+            $competitorId = $row['competitor_id'];
 
-    // POST – zapis nowych prób
-    if ($request->isMethod('POST')) {
-        $competitorId = $request->request->get('competitor');
-        $quantities   = $request->request->all('quantities');
-
-        if ($competitorId && $quantities) {
-            $competitor = $competitorRepository->find($competitorId);
-            $addedAttempts = 0;
-
-            foreach ($quantities as $categoryId => $qty) {
-                $qty = (int)$qty;
-                if ($qty > 0) {
-                    $category = $categoryRepository->find($categoryId);
-                    if (!$category) {
-                        continue;
-                    }
-
-                    for ($i = 0; $i < $qty; $i++) {
-                        $attempt = new Attempt();
-                        $attempt->setCompetitor($competitor);
-                        $attempt->setCategory($category);
-                        $em->persist($attempt);
-                        $addedAttempts++;
-                    }
-                }
+            if (!isset($attemptsOrganized[$competitorId])) {
+                $attemptsOrganized[$competitorId] = [
+                    'competitor_id' => $competitorId,
+                    'categories' => [],
+                ];
             }
-
-            if ($addedAttempts > 0) {
-                $em->flush();
-                $this->addFlash('success', 'Pomyślnie dodano ' . $addedAttempts . ' nowe tarcze dla zawodnika: ' . $competitor->getFirstName() . ' ' . $competitor->getLastName());
-            } else {
-                $this->addFlash('attention', '!!! UWAGA !!!');
-                $this->addFlash('fail', 'Nie dodano żadnych tarcz. Wybierz ilość większą od 0.');
-            }
-        } else {
-                $this->addFlash('attention', '!!! UWAGA !!!');
-            $this->addFlash('fail', 'Nie wybrano zawodnika.');
-        }
-
-        return $this->redirectToRoute('app_tournament_add_score', ['id' => $id]);
-    }
-
-    // GET – render formularza
-    $categories = $tournamentRepository->getCategories($id);
-    $attempts   = $tournamentRepository->getAttempts($id);
-    $competitors = $competitorRepository->findAll();
-
-    $competitorAttempts = [];
-    $attemptMap = [];
-
-    foreach ($attempts as $attempt) {
-        $competitorId = $attempt['competitor_id'];
-        $categoryId   = $attempt['category_id'];
-
-        if (!isset($attemptMap[$competitorId])) {
-            $attemptMap[$competitorId] = [];
-        }
-        if (!isset($attemptMap[$competitorId][$categoryId])) {
-            $attemptMap[$competitorId][$categoryId] = 0;
-        }
-        $attemptMap[$competitorId][$categoryId]++;
-    }
-
-    foreach ($competitors as $competitor) {
-        $competitorId = $competitor['id'];
-
-        $competitorAttempts[$competitorId] = [
-            'id' => $competitorId,
-            'first_name' => $competitor['first_name'],
-            'last_name' => $competitor['last_name'],
-            'association_name' => $competitor['association_name'],
-            'categories' => []
-        ];
-
-        foreach ($categories as $category) {
-            $categoryId = $category['id'];
-
-            $competitorAttempts[$competitorId]['categories'][] = [
-                'id' => $categoryId,
-                'name' => $category['name'],
-                'initial_fee' => $category['initial_fee'],
-                'additional_fee' => $category['additional_fee'],
-                'count' => $attemptMap[$competitorId][$categoryId] ?? 0
+            $attemptsOrganized[$competitorId]['categories'][ $row['category_id']] = [
+                'category_id' => $row['category_id'],
+                'attempts' => $row['attempts']
             ];
         }
+        
+        return $this->render('tournament/adminpanel.html.twig', [
+            'tournament_id' => $id,
+            'competitor_list' => $competitors,
+            'association_list' => $associations,
+            'competitors_attempts' => $attemptsOrganized,
+            'categories' => $categories,
+        ]);
     }
-    return $this->render('tournament/addscore.html.twig', [
-        'id' => $id,
-        'categories' => $categories,
-        'competitors' => $competitors,
-        'competitorAttempts' => $competitorAttempts,
-    ]);
-}
 
 
 #[Route('/tournament/admin/markScore/{id}', name: 'app_tournament_mark_score')]

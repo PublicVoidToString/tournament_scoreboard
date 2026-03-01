@@ -89,7 +89,7 @@ class AppFixtures extends Fixture
         $tarcza = new Category();
         $tarcza->setName("Strzelanie o Tytuł Mistrza Okręgu Pomorskiego");
         $tarcza->setInitialFee(50);
-        $tarcza->setAdditionalFee(9999);
+        $tarcza->setAdditionalFee(999);
         $tarcza->setAttemptLimit(1);
         $tarcza->setTournament($zawody);
         $tarcza->setCategoryGroup($kbks);
